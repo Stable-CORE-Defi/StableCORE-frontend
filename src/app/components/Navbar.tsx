@@ -8,50 +8,50 @@ const Navbar = () => {
   return (
     <nav className="bg-black text-white p-8">
       <div className="container mx-auto flex justify-between items-center">
-        <div className="text-xl font-bold text-[#C6D130]">
-          <Link href="/">PHAROS.MONEY</Link>
+        <div className="text-xl font-bold text-[#FF8C00]">
+          <Link href="/">CORE.MONEY</Link>
         </div>
 
         <div className="hidden md:flex space-x-8">
           <Link
             href="/mint"
-            className="font-medium tracking-wide hover:text-[#C6D130] transition duration-300"
+            className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
             MINT
           </Link>
           <Link
             href="/admin"
-            className="font-medium tracking-wide hover:text-[#C6D130] transition duration-300"
+            className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
             ADMIN
           </Link>
           <Link
             href="/operator-screen"
-            className="font-medium tracking-wide hover:text-[#C6D130] transition duration-300"
+            className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
             OPERATOR
           </Link>
           <Link
             href="/restaking-screen"
-            className="font-medium tracking-wide hover:text-[#C6D130] transition duration-300"
+            className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
             RESTAKING
           </Link>
           <Link
             href="/spusd"
-            className="font-medium tracking-wide hover:text-[#C6D130] transition duration-300"
+            className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
             SPUSD
           </Link>
           <Link
             href="/usdc"
-            className="font-medium tracking-wide hover:text-[#C6D130] transition duration-300"
+            className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
             USDC
           </Link>
           <Link
             href="/lst"
-            className="font-medium tracking-wide hover:text-[#C6D130] transition duration-300"
+            className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
             LST
           </Link>

@@ -41,7 +41,7 @@ const StablecoinAnimation = () => {
         size: Math.random() * 3 + 1,
         speedX: (Math.random() - 0.5) * 0.5,
         speedY: (Math.random() - 0.5) * 0.5,
-        color: Math.random() > 0.8 ? '#C6D130' : '#ffffff',
+        color: Math.random() > 0.8 ? '#FF8C00' : '#ffffff',
         opacity: Math.random() * 0.5 + 0.2
       }));
       
@@ -118,8 +118,8 @@ const StablecoinAnimation = () => {
         // Draw particle
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-        ctx.fillStyle = particle.color === '#C6D130' 
-          ? `rgba(198, 209, 48, ${particle.opacity})` 
+        ctx.fillStyle = particle.color === '#FF8C00' 
+          ? `rgba(255, 140, 0, ${particle.opacity})` 
           : `rgba(255, 255, 255, ${particle.opacity * 0.5})`;
         ctx.fill();
         
@@ -140,8 +140,8 @@ const StablecoinAnimation = () => {
             ctx.lineTo(updatedParticles[j].x, updatedParticles[j].y);
             
             const opacity = 1 - distance / 100;
-            if (updatedParticles[i].color === '#C6D130' || updatedParticles[j].color === '#C6D130') {
-              ctx.strokeStyle = `rgba(198, 209, 48, ${opacity * 0.3})`;
+            if (updatedParticles[i].color === '#FF8C00' || updatedParticles[j].color === '#FF8C00') {
+              ctx.strokeStyle = `rgba(255, 140, 0, ${opacity * 0.3})`;
             } else {
               ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.1})`;
             }
@@ -158,19 +158,19 @@ const StablecoinAnimation = () => {
       // Draw outer ring
       ctx.beginPath();
       ctx.arc(centerX, centerY, 80, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(198, 209, 48, 0.8)';
+      ctx.strokeStyle = 'rgba(255, 140, 0, 0.8)';
       ctx.lineWidth = 2;
       ctx.stroke();
       
       // Draw inner circle
       ctx.beginPath();
       ctx.arc(centerX, centerY, 70, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(198, 209, 48, 0.1)';
+      ctx.fillStyle = 'rgba(255, 140, 0, 0.1)';
       ctx.fill();
       
       // Draw dollar symbol
       ctx.font = 'bold 60px Arial';
-      ctx.fillStyle = '#C6D130';
+      ctx.fillStyle = '#FF8C00';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('$', centerX, centerY);
@@ -182,8 +182,8 @@ const StablecoinAnimation = () => {
         centerX, centerY, 60,
         centerX, centerY, glowSize
       );
-      gradient.addColorStop(0, 'rgba(198, 209, 48, 0.3)');
-      gradient.addColorStop(1, 'rgba(198, 209, 48, 0)');
+      gradient.addColorStop(0, 'rgba(255, 140, 0, 0.3)');
+      gradient.addColorStop(1, 'rgba(255, 140, 0, 0)');
       
       ctx.beginPath();
       ctx.arc(centerX, centerY, glowSize, 0, Math.PI * 2);
@@ -203,14 +203,14 @@ const StablecoinAnimation = () => {
         ctx.beginPath();
         ctx.moveTo(centerX, centerY);
         ctx.lineTo(x, y);
-        ctx.strokeStyle = `rgba(198, 209, 48, ${0.2 + Math.sin(time + i) * 0.1})`;
+        ctx.strokeStyle = `rgba(255, 140, 0, ${0.2 + Math.sin(time + i) * 0.1})`;
         ctx.lineWidth = 1;
         ctx.stroke();
         
         // Draw data point
         ctx.beginPath();
         ctx.arc(x, y, 4, 0, Math.PI * 2);
-        ctx.fillStyle = '#C6D130';
+        ctx.fillStyle = '#FF8C00';
         ctx.fill();
       }
       
@@ -293,7 +293,7 @@ const StablecoinAnimation = () => {
       ctx.beginPath();
       ctx.moveTo(centerX, centerY);
       ctx.lineTo(earthX, earthY);
-      ctx.strokeStyle = 'rgba(198, 209, 48, 0.3)';
+      ctx.strokeStyle = 'rgba(255, 140, 0, 0.3)';
       ctx.lineWidth = 1;
       ctx.setLineDash([5, 5]);
       ctx.stroke();
@@ -307,7 +307,7 @@ const StablecoinAnimation = () => {
       
       ctx.beginPath();
       ctx.arc(satelliteX, satelliteY, 3, 0, Math.PI * 2);
-      ctx.fillStyle = '#C6D130';
+      ctx.fillStyle = '#FF8C00';
       ctx.fill();
       
       setParticles(updatedParticles);

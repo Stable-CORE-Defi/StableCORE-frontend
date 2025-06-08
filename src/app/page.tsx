@@ -41,7 +41,7 @@ const HomePage = () => {
             </p>
             <button
               onClick={() => router.push("/mint")}
-              className="px-8 py-3 bg-black text-[#C6D130] text-lg font-semibold border-2 border-[#C6D130] rounded-md hover:bg-[#C6D130] hover:text-black transition-colors shadow-[0_0_15px_rgba(198,209,48,0.7)] hover:shadow-[0_0_25px_rgba(198,209,48,1)]"
+              className="px-8 py-3 bg-black text-[#FF8C00] text-lg font-semibold border-2 border-[#FF8C00] rounded-md hover:bg-[#FF8C00] hover:text-black transition-colors shadow-[0_0_15px_rgba(198,209,48,0.7)] hover:shadow-[0_0_25px_rgba(198,209,48,1)]"
             >
               LAUNCH APP
             </button>
@@ -79,24 +79,24 @@ const HomePage = () => {
           {/* Diagram Explanation */}
           <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-6">
-              <h3 className="text-2xl font-bold text-[#C6D130]">
+              <h3 className="text-2xl font-bold text-[#FF8C00]">
                 Collateral Flow
               </h3>
               <ul className="space-y-4 text-gray-300">
                 <li className="flex items-start">
-                  <span className="text-[#C6D130] mr-2">1.</span>
+                  <span className="text-[#FF8C00] mr-2">1.</span>
                   <span>
                     Users deposit LST tokens as collateral into the protocol
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-[#C6D130] mr-2">2.</span>
+                  <span className="text-[#FF8C00] mr-2">2.</span>
                   <span>
                     LST tokens are delegated to verified operators for restaking
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-[#C6D130] mr-2">3.</span>
+                  <span className="text-[#FF8C00] mr-2">3.</span>
                   <span>
                     Operators provide security across multiple networks
                   </span>
@@ -105,24 +105,24 @@ const HomePage = () => {
             </div>
 
             <div className="space-y-6">
-              <h3 className="text-2xl font-bold text-[#C6D130]">
+              <h3 className="text-2xl font-bold text-[#FF8C00]">
                 Stablecoin Flow
               </h3>
               <ul className="space-y-4 text-gray-300">
                 <li className="flex items-start">
-                  <span className="text-[#C6D130] mr-2">4.</span>
+                  <span className="text-[#FF8C00] mr-2">4.</span>
                   <span>
                     Users receive PUSD stablecoins against their collateral
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-[#C6D130] mr-2">5.</span>
+                  <span className="text-[#FF8C00] mr-2">5.</span>
                   <span>
                     PUSD can be deposited into sPUSD vault for yield generation
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-[#C6D130] mr-2">6.</span>
+                  <span className="text-[#FF8C00] mr-2">6.</span>
                   <span>
                     Yield is generated from operator rewards and lending markets
                   </span>
@@ -133,7 +133,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Why Choose PHAROSDOTMONEY Section */}
+      {/* Why Choose COREDOTMONEY Section */}
       <div className="container mx-auto px-4 py-20 border-t border-gray-800">
         <div className="text-left mb-16">
           <h2
@@ -145,7 +145,7 @@ const HomePage = () => {
               fontFamily: "monospace",
             }}
           >
-            WHY CHOOSE PHAROSDOTMONEY
+            WHY CHOOSE COREDOTMONEY
           </h2>
           <p className="text-lg text-gray-300 max-w-2xl">
             Earn yield safely while maintaining access to your funds.
@@ -200,7 +200,7 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* How PHAROSDOTMONEY Works Section */}
+      {/* How COREDOTMONEY Works Section */}
       <div className="container mx-auto px-4 py-20 border-t border-gray-800">
         <div className="text-left mb-16">
           <h2
@@ -212,7 +212,7 @@ const HomePage = () => {
               fontFamily: "monospace",
             }}
           >
-            HOW PHAROSDOTMONEY WORKS
+            HOW COREDOTMONEY WORKS
           </h2>
         </div>
 
@@ -302,10 +302,10 @@ const HomePage = () => {
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="border border-gray-800 p-4 text-left text-[#C6D130]">
+                <th className="border border-gray-800 p-4 text-left text-[#FF8C00]">
                   Token
                 </th>
-                <th className="border border-gray-800 p-4 text-left text-[#C6D130]">
+                <th className="border border-gray-800 p-4 text-left text-[#FF8C00]">
                   Address
                 </th>
               </tr>
@@ -328,7 +328,7 @@ const HomePage = () => {
       <footer
         className="mt-20 border-t border-gray-800"
         style={{
-          backgroundColor: "#C6D130",
+          backgroundColor: "#FF8C00",
           boxShadow: "inset 0 10px 30px -10px rgba(0,0,0,0.3)",
         }}
       >
@@ -339,7 +339,7 @@ const HomePage = () => {
                 Stablecoin protocol with credible financial guarantees
               </p>
               <p className="text-xs text-gray-700">
-                PHAROSDOTMONEY © 2025 All rights reserved.
+                COREDOTMONEY © 2025 All rights reserved.
               </p>
             </div>
           </div>
