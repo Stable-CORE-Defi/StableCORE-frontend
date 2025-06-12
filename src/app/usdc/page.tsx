@@ -113,7 +113,7 @@ const USDCMint = () => {
           style={{
             letterSpacing: "0.05em",
             textShadow:
-              "0.05em 0 0 rgba(255,0,0,0.75), -0.025em -0.05em 0 rgba(0,255,0,0.75), 0.025em 0.05em 0 rgba(0,0,255,0.75)",
+              "0.05em 0 0 rgba(255,140,0,0.75), -0.025em -0.05em 0 rgba(255,127,80,0.75), 0.025em 0.05em 0 rgba(255,99,71,0.75)",
             fontFamily: "monospace",
           }}
         >
@@ -132,7 +132,7 @@ const USDCMint = () => {
               <div className="mb-4">
                 <p className="text-gray-300 mb-2">
                   Your USDC Balance:{" "}
-                  <span className="text-[#C6D130] font-bold">
+                  <span className="text-[#FF8C00] font-bold">
                     {balance} USDC
                   </span>
                 </p>
@@ -141,7 +141,7 @@ const USDCMint = () => {
               <div className="mb-6">
                 <label
                   htmlFor="amount"
-                  className="block text-sm font-medium text-[#C6D130] mb-1"
+                  className="block text-sm font-medium text-[#FF8C00] mb-1"
                 >
                   Amount to Mint
                 </label>
@@ -151,7 +151,7 @@ const USDCMint = () => {
                   value={amount}
                   onChange={handleAmountChange}
                   placeholder="0.00"
-                  className="w-full px-3 py-2 bg-black border border-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-[#C6D130]"
+                  className="w-full px-3 py-2 bg-black border border-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C00]"
                   disabled={loading}
                 />
               </div>
@@ -161,7 +161,7 @@ const USDCMint = () => {
                 disabled={loading || !amount}
                 className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${
                   loading ? "opacity-70" : ""
-                } bg-black border border-[#C6D130] shadow-[0_0_15px_rgba(198,209,48,0.7)] hover:shadow-[0_0_20px_rgba(198,209,48,1)] hover:text-[#C6D130]`}
+                } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
               >
                 {loading ? "Processing..." : "Mint USDC"}
               </button>
@@ -176,7 +176,7 @@ const USDCMint = () => {
             </div>
 
             <div className="bg-black border border-gray-800 p-4 rounded-lg">
-              <h2 className="text-lg font-semibold mb-2 text-[#C6D130]">
+              <h2 className="text-lg font-semibold mb-2 text-[#FF8C00]">
                 About USDC Minting
               </h2>
               <p className="text-gray-300 mb-2">

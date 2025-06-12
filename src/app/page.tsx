@@ -289,7 +289,7 @@ const HomePage = () => {
             fontFamily: "monospace",
           }}
         >
-          PHAROS DEVNET DEPLOYMENT ADDRESSES
+          CORE TESTNET DEPLOYMENT ADDRESSES
         </h2>
         <div
           className="max-w-4xl mx-auto bg-black p-8 rounded-lg border border-gray-800"
