@@ -1,11 +1,7 @@
 // Network configurations
 import { hardhat } from "viem/chains";
-
 import { createPublicClient, http } from "viem";
-
 import { coreTestnet2 } from "viem/chains";
-
-
 
 // Custom hardhat configuration
 const hardhatConfig = {
@@ -24,13 +20,13 @@ const hardhatConfig = {
 };
 
 export const supportedChains = {
-  baseSepolia: {
+  coreTestnet2: {
     id: 84532,
-    name: 'Base Sepolia',
-    network: 'base-sepolia',
+    name: 'Core Testnet2',
+    network: 'core-testnet2',
     nativeCurrency: {
-      name: 'Sepolia Ether',
-      symbol: 'ETH',
+      name: 'Core',
+      symbol: 'CORE',
       decimals: 18,
     },
     rpcUrls: {
@@ -43,42 +39,13 @@ export const supportedChains = {
     },
     blockExplorers: {
       default: {
-        name: 'BaseScan',
+        name: 'CoreScan',
         url: 'https://sepolia.basescan.org',
       },
     },
     testnet: true,
   },
   hardhat: hardhatConfig,
-  pharos: {
-    id: 50002,
-    name: 'Pharos Network',
-    network: 'pharos',
-    nativeCurrency: {
-      name: 'ETH',
-      symbol: 'ETH',
-      decimals: 18,
-    },
-    rpcUrls: {
-      default: {
-        http: [
-          'https://devnet.dplabs-internal.com',
-          'https://devnet.dplabs-internal.com/rpc', // Add fallback URL if available
-        ],
-        webSocket: ['wss://devnet.dplabs-internal.com/ws'], // Add WebSocket if available
-      },
-      public: {
-        http: ['https://devnet.dplabs-internal.com'],
-      },
-    },
-    blockExplorers: {
-      default: {
-        name: 'PharosScan',
-        url: 'https://pharosscan.xyz',
-      },
-    },
-    testnet: true,
-  },
 };
 
 // Update the interfaces
@@ -94,11 +61,11 @@ interface BaseAddresses {
 
 // Remove empty interfaces and use type aliases instead
 type HardhatAddresses = BaseAddresses;
-type PharosAddresses = BaseAddresses;
+type CoreTestnet2Addresses = BaseAddresses;
 
 export const contractAddresses: {
   hardhat: HardhatAddresses;
-  pharos: PharosAddresses;
+  coreTestnet2: CoreTestnet2Addresses;
 } = {
   hardhat: {
     USDC: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
@@ -109,7 +76,7 @@ export const contractAddresses: {
     Operator: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
     LoanManager: '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6',
   },
-  pharos: {
+  coreTestnet2: {
     USDC: '0x8182BEF887361F3312D344e229160C389616b6F0',
     LST: '0xBB6f0beF915a4baaF6818c11BFeb648041f70959',
     PUSD: '0x61edDE0E4B97D878C14F5f5706309d4572550Afa',
@@ -125,9 +92,9 @@ export const getContractAddress = (
   contractName: keyof BaseAddresses,
   chainId: number
 ): string => {
-  // Pharos Network
-  if (chainId === supportedChains.pharos.id) {
-    return contractAddresses.pharos[contractName];
+  // Core Testnet2
+  if (chainId === supportedChains.coreTestnet2.id) {
+    return contractAddresses.coreTestnet2[contractName];
   }
   
   // Hardhat
@@ -150,38 +117,30 @@ export const ABIs = {
 
 // RPC URLs
 export const getRpcUrl = (chainId: number): string => {
-  if (chainId === supportedChains.pharos.id) {
-    return supportedChains.pharos.rpcUrls.default.http[0];
-  }
-  
-  if (chainId === supportedChains.baseSepolia.id) {
-    return supportedChains.baseSepolia.rpcUrls.default.http[0];
+  if (chainId === supportedChains.coreTestnet2.id) {
+    return supportedChains.coreTestnet2.rpcUrls.default.http[0];
   }
   
   if (chainId === supportedChains.hardhat.id) {
     return supportedChains.hardhat.rpcUrls.default.http[0];
   }
   
-  // Default to Pharos
-  return supportedChains.pharos.rpcUrls.default.http[0];
+  // Default to Core Testnet2
+  return supportedChains.coreTestnet2.rpcUrls.default.http[0];
 };
 
 // Explorer URLs
 export const getExplorerUrl = (chainId: number): string => {
-  if (chainId === supportedChains.pharos.id) {
-    return supportedChains.pharos.blockExplorers.default.url;
-  }
-  
-  if (chainId === supportedChains.baseSepolia.id) {
-    return supportedChains.baseSepolia.blockExplorers.default.url;
+  if (chainId === supportedChains.coreTestnet2.id) {
+    return supportedChains.coreTestnet2.blockExplorers.default.url;
   }
   
   if (chainId === supportedChains.hardhat.id) {
     return '';
   }
   
-  // Default to Pharos
-  return supportedChains.pharos.blockExplorers.default.url;
+  // Default to Core Testnet2
+  return supportedChains.coreTestnet2.blockExplorers.default.url;
 };
 
 // Helper to format transaction URL
@@ -201,7 +160,7 @@ export const getAddressUrl = (chainId: number, address: string): string => {
 // Add more configuration options as needed
 
 // Add to wagmi config
-export const chains = [supportedChains.pharos, supportedChains.baseSepolia, supportedChains.hardhat];
+export const chains = [supportedChains.coreTestnet2, supportedChains.hardhat];
 
 // Add timeout and retry configuration
 export const rpcConfig = {
@@ -213,8 +172,8 @@ export const rpcConfig = {
 
 // Update the client configuration
 export const publicClient = createPublicClient({
-  chain: supportedChains.pharos,
-  transport: http(supportedChains.pharos.rpcUrls.default.http[0], {
+  chain: supportedChains.coreTestnet2,
+  transport: http(supportedChains.coreTestnet2.rpcUrls.default.http[0], {
     timeout: rpcConfig.timeout,
     retryCount: rpcConfig.retryCount,
     retryDelay: rpcConfig.retryDelay,

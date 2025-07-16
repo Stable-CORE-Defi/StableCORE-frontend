@@ -17,14 +17,15 @@ import {
   QueryClientProvider,
   QueryClient,
 } from "@tanstack/react-query";
+import { coreTestnet2 } from 'viem/chains';
 
 const inter = Inter({ subsets: ['latin'] });
 
 // Configure RainbowKit with our custom Pharos chain
 const config = getDefaultConfig({
-  appName: 'Pharos Money',
+  appName: 'StableCORE',
   projectId: 'YOUR_PROJECT_ID',
-  chains: [hardhat],
+  chains: [hardhat , coreTestnet2],
   ssr: true,
   pollingInterval: rpcConfig.pollingInterval,
 });
