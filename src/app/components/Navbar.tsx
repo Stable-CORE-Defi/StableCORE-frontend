@@ -9,7 +9,7 @@ const Navbar = () => {
     <nav className="bg-black text-white p-8">
       <div className="container mx-auto flex justify-between items-center">
         <div className="text-xl font-bold text-[#FF8C00]">
-          <Link href="/">CORE.MONEY</Link>
+          <Link href="/">StableCORE</Link>
         </div>
 
         <div className="hidden md:flex space-x-8">

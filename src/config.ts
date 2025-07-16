@@ -3,6 +3,8 @@ import { hardhat } from "viem/chains";
 
 import { createPublicClient, http } from "viem";
 
+import { coreTestnet2 } from "viem/chains";
+
 
 
 // Custom hardhat configuration
