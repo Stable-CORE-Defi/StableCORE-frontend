@@ -211,6 +211,197 @@ const HomePage = () => {
     }
   };
 
+  // Restaking functions
+  // Fetch LST balance and delegated amount
+  const fetchLstBalance = async () => {
+    if (!address || !publicClient) return;
+
+    try {
+      const balanceData = await publicClient.readContract({
+        address: ContractAddresses.LST as `0x${string}`,
+        abi: LSTJson.abi,
+        functionName: "balanceOf",
+        args: [address],
+      });
+
+      setLstBalance(formatUnits(balanceData as bigint, 18));
+
+      // Also fetch delegated amount
+      try {
+        const delegatedData = await publicClient.readContract({
+          address: ContractAddresses.Eigen as `0x${string}`,
+          abi: EigenJson.abi,
+          functionName: "getDelegatedAmount",
+          args: [address],
+        });
+
+        setDelegatedAmount(formatUnits(delegatedData as bigint, 18));
+      } catch (err) {
+        console.error("Error fetching delegated amount:", err);
+        // If this fails, we'll just show 0 delegated
+      }
+    } catch (err) {
+      console.error("Error fetching LST balance:", err);
+    }
+  };
+
+  // Fetch LST balance on mount and when address changes
+  useEffect(() => {
+    if (isConnected && address && publicClient) {
+      fetchLstBalance();
+    }
+  }, [address, isConnected, publicClient]);
+
+  // Handle LST amount input change
+  const handleLstAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Only allow numbers and decimals
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      setLstAmount(value);
+    }
+  };
+
+  // Handle max button click for restaking
+  const handleLstMaxClick = () => {
+    if (activeTab === "delegate") {
+      setLstAmount(lstBalance);
+    } else {
+      setLstAmount(delegatedAmount);
+    }
+  };
+
+  // Show restaking notification
+  const showRestakingNotification = (message: string, type: string) => {
+    setRestakingNotification({ show: true, message, type });
+    setTimeout(() => {
+      setRestakingNotification({ show: false, message: "", type: "" });
+    }, 5000);
+  };
+
+  // Handle LST mint (fixed amount of 10 LST)
+  const handleLstMint = async () => {
+    if (!walletClient || !publicClient) {
+      showRestakingNotification("Wallet not connected properly", "error");
+      return;
+    }
+
+    setLstLoading(true);
+    try {
+      // Convert 10 LST to units (18 decimals)
+      const lstAmountUnits = parseUnits("10", 18);
+
+      // Prepare the mint transaction
+      const { request } = await publicClient.simulateContract({
+        address: ContractAddresses.LST as `0x${string}`,
+        abi: LSTJson.abi,
+        functionName: "mint",
+        args: [lstAmountUnits],
+        account: address,
+      });
+
+      // Execute the transaction using the wallet's provider
+      const hash = await walletClient.writeContract(request);
+
+      // Wait for transaction to complete
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      // Update balance
+      fetchLstBalance();
+      showRestakingNotification("Successfully minted 10 LST!", "success");
+    } catch (error: unknown) {
+      console.error("Error minting LST:", error);
+      showRestakingNotification(
+        error instanceof Error ? error.message : "Failed to mint LST. Please try again.",
+        "error"
+      );
+    } finally {
+      setLstLoading(false);
+    }
+  };
+
+  // Handle delegate action (addDelegation)
+  const handleDelegate = async () => {
+    if (!lstAmount || parseFloat(lstAmount) <= 0) {
+      showRestakingNotification("Please enter a valid amount", "error");
+      return;
+    }
+
+    if (!walletClient || !publicClient) {
+      showRestakingNotification("Wallet not connected properly", "error");
+      return;
+    }
+
+    setRestakingLoading(true);
+    try {
+      const { request } = await publicClient.simulateContract({
+        address: ContractAddresses.Eigen as `0x${string}`,
+        abi: EigenJson.abi,
+        functionName: "addDelegation",
+        args: [parseUnits(lstAmount, 18)],
+        account: address,
+      });
+
+      const hash = await walletClient.writeContract(request);
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      // Update balance
+      fetchLstBalance();
+
+      showRestakingNotification(`Successfully delegated ${lstAmount} LST`, "success");
+      setLstAmount("");
+    } catch (error: unknown) {
+      console.error("Delegation error:", error);
+      showRestakingNotification(
+        error instanceof Error ? error.message : "Failed to delegate tokens",
+        "error"
+      );
+    } finally {
+      setRestakingLoading(false);
+    }
+  };
+
+  // Handle undelegate action (removeDelegation)
+  const handleUndelegate = async () => {
+    if (!lstAmount || parseFloat(lstAmount) <= 0) {
+      showRestakingNotification("Please enter a valid amount", "error");
+      return;
+    }
+
+    if (!walletClient || !publicClient) {
+      showRestakingNotification("Wallet not connected properly", "error");
+      return;
+    }
+
+    setRestakingLoading(true);
+    try {
+      // Call removeDelegation with separate parameters
+      const { request } = await publicClient.simulateContract({
+        address: ContractAddresses.Eigen as `0x${string}`,
+        abi: EigenJson.abi,
+        functionName: "removeDelegation",
+        args: [parseUnits(lstAmount, 18)],
+        account: address,
+      });
+
+      const hash = await walletClient.writeContract(request);
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      // Update balance
+      fetchLstBalance();
+
+      showRestakingNotification(`Successfully undelegated ${lstAmount} LST`, "success");
+      setLstAmount("");
+    } catch (error: unknown) {
+      console.error("Undelegation error:", error);
+      showRestakingNotification(
+        error instanceof Error ? error.message : "Failed to undelegate tokens",
+        "error"
+      );
+    } finally {
+      setRestakingLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Hero Section */}
@@ -584,9 +775,160 @@ const HomePage = () => {
                   <h2 className="text-2xl font-bold mb-6 text-[#FF8C00] font-mono">
                     RESTAKING
                   </h2>
-                  <p className="text-gray-300">
-                    Restaking functionality will be available here. Click on the RESTAKING step to see the interface.
-                  </p>
+
+                  {/* Notification */}
+                  {restakingNotification.show && (
+                    <div
+                      className={`mb-4 p-3 rounded-md ${
+                        restakingNotification.type === "error"
+                          ? "bg-red-900 bg-opacity-50 text-red-200"
+                          : "bg-green-900 bg-opacity-50 text-green-200"
+                      }`}
+                    >
+                      {restakingNotification.message}
+                    </div>
+                  )}
+
+                  {!isConnected ? (
+                    <div className="bg-black border border-gray-800 p-4 rounded-lg">
+                      <p className="text-center text-gray-300">
+                        Please connect your wallet to use restaking features
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* LST Mint Button */}
+                      <div className="mb-6">
+                        <div className="bg-black border border-gray-800 p-4 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-gray-300 mb-1">
+                                Your LST Balance:{" "}
+                                <span className="text-[#FF8C00] font-bold">
+                                  {lstBalance} LST
+                                </span>
+                              </p>
+                              <p className="text-sm text-gray-400">
+                                Need LST to delegate? Get 10 LST for testing
+                              </p>
+                            </div>
+                            
+                            <button
+                              onClick={handleLstMint}
+                              disabled={lstLoading}
+                              className={`px-4 py-2 rounded-md text-white font-medium transition-colors ${
+                                lstLoading ? "opacity-70" : ""
+                              } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+                            >
+                              {lstLoading ? "Processing..." : "Mint 10 LST"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Main Restaking Interface */}
+                      <div className="bg-black border border-gray-800 p-4 rounded-lg mb-4">
+                        {/* Tabs */}
+                        <div className="flex mb-4 border-b border-gray-800">
+                          <button
+                            onClick={() => setActiveTab("delegate")}
+                            className={`py-2 px-4 ${
+                              activeTab === "delegate"
+                                ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
+                                : "text-gray-400"
+                            }`}
+                          >
+                            Delegate
+                          </button>
+                          <button
+                            onClick={() => setActiveTab("undelegate")}
+                            className={`py-2 px-4 ${
+                              activeTab === "undelegate"
+                                ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
+                                : "text-gray-400"
+                            }`}
+                          >
+                            Undelegate
+                          </button>
+                        </div>
+
+                        {/* Balance Display */}
+                        <div className="mb-4 p-3 bg-gray-900 bg-opacity-50 rounded-lg">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-gray-400 text-sm">Your LST Balance</span>
+                            <span className="text-lg font-semibold">{lstBalance} LST</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">Delegated LST</span>
+                            <span className="text-lg font-semibold">
+                              {delegatedAmount} LST
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Input Form */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-[#FF8C00] mb-1">
+                            {activeTab === "delegate"
+                              ? "Amount to Delegate"
+                              : "Amount to Undelegate"}
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={lstAmount}
+                              onChange={handleLstAmountChange}
+                              placeholder="0.00"
+                              className="w-full px-3 py-2 bg-gray-800 bg-opacity-50 border border-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C00]"
+                              disabled={restakingLoading}
+                            />
+                            <button
+                              onClick={handleLstMaxClick}
+                              className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs bg-gray-700 px-2 py-1 rounded text-gray-300 hover:bg-gray-600"
+                            >
+                              MAX
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Action Button */}
+                        <div>
+                          <button
+                            onClick={
+                              activeTab === "delegate" ? handleDelegate : handleUndelegate
+                            }
+                            disabled={restakingLoading}
+                            className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${
+                              restakingLoading ? "opacity-70" : ""
+                            } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+                          >
+                            {restakingLoading
+                              ? "Processing..."
+                              : activeTab === "delegate"
+                              ? "Delegate Tokens"
+                              : "Undelegate Tokens"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* About Restaking */}
+                      <div className="bg-black border border-gray-800 p-4 rounded-lg">
+                        <h3 className="text-lg font-semibold mb-2 text-[#FF8C00]">
+                          About Restaking
+                        </h3>
+                        <p className="text-gray-300 mb-2 text-sm">
+                          Restaking allows you to earn rewards by providing security to the
+                          network. Your delegated tokens help secure multiple blockchain
+                          protocols simultaneously.
+                        </p>
+                        <p className="text-gray-300 text-sm">
+                          When you delegate your LST tokens to an operator, they can use your
+                          stake to validate transactions across different networks, increasing
+                          your potential rewards.
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
