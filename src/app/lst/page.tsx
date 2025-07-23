@@ -189,7 +189,7 @@ const LSTMint = () => {
                 DeFi while earning staking rewards.
               </p>
               <p className="text-gray-300 mt-2">
-                LSTs are used in the COREDOTMONEY protocol for restaking,
+                LSTs are used in the StableCORE protocol for restaking,
                 allowing operators to provide security to multiple networks
                 simultaneously.
               </p>

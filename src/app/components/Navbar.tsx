@@ -43,7 +43,7 @@ const Navbar = () => {
           >
             SPUSD
           </Link>
-          <Link
+          {/* <Link
             href="/usdc"
             className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
@@ -54,7 +54,7 @@ const Navbar = () => {
             className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
             LST
-          </Link>
+          </Link> */}
         </div>
 
         <div className="flex items-center">
