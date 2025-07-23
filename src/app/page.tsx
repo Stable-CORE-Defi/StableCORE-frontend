@@ -149,70 +149,89 @@ const HomePage = () => {
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {/* Step 1 */}
-          <div
-            className="bg-black p-8 rounded-lg border border-gray-800 hover:border-[#FF8C00] transition duration-300 flex flex-col min-h-[220px] group"
-            style={{
-              backgroundImage:
-                "radial-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 1px)",
-              backgroundSize: "10px 10px",
-            }}
-          >
-            <div className="flex items-center mb-4">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#FF8C00] text-black font-bold text-xl mr-3 group-hover:bg-[#FFA500] transition-colors">
-                1
-              </div>
-              <h3 className="text-xl font-bold text-white group-hover:text-gray-200 transition-colors">Deposit Collateral</h3>
-            </div>
-            <div className="bg-orange-300 bg-opacity-80 p-4 rounded-lg border border-[#FFA500] border-opacity-50">
-              <p className="text-black font-bold leading-relaxed">
-                Securely deposit your crypto assets as collateral.
-              </p>
-            </div>
-          </div>
+        <div className="max-w-6xl mx-auto">
+          <div className="flex">
+            {/* Left side - Steps with connecting line */}
+            <div className="w-1/2 pr-8">
+              <div className="relative">
+                {/* Vertical connecting line */}
+                <div className="absolute left-8 top-16 bottom-0 w-0.5 bg-gradient-to-b from-[#FF8C00] via-[#FF8C00] to-[#FF8C00] opacity-60"></div>
+                
+                <div className="space-y-12">
+                  {/* Step 1 - Mint */}
+                  <div className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative">
+                    <div className="flex-shrink-0 relative z-10">
+                      <div className="w-16 h-16 rounded-lg border-2 border-gray-600 hover:border-[#FF8C00] transition-colors duration-300 flex items-center justify-center bg-black group-hover:bg-[#FF8C00] group-hover:text-black">
+                        <span className="text-2xl font-bold text-white group-hover:text-black transition-colors">1</span>
+                      </div>
+                    </div>
+                    <div className="flex-grow">
+                      <h3 className="text-3xl font-bold text-white mb-3 group-hover:text-[#FF8C00] transition-colors">
+                        MINT
+                      </h3>
+                      <p className="text-[#FF8C00] text-lg font-medium leading-relaxed">
+                        Mint USDC and get PUSD stablecoins in return.
+                      </p>
+                    </div>
+                  </div>
 
-          {/* Step 2 */}
-          <div
-            className="bg-black p-8 rounded-lg border border-gray-800 hover:border-[#FF8C00] transition duration-300 flex flex-col min-h-[220px] group"
-            style={{
-              backgroundImage:
-                "radial-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 1px)",
-              backgroundSize: "10px 10px",
-            }}
-          >
-            <div className="flex items-center mb-4">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#FF8C00] text-black font-bold text-xl mr-3 group-hover:bg-[#FFA500] transition-colors">
-                2
-              </div>
-              <h3 className="text-xl font-bold text-white group-hover:text-gray-200 transition-colors">Receive Stablecoins</h3>
-            </div>
-            <div className="bg-orange-300 bg-opacity-80 p-4 rounded-lg border border-[#FFA500] border-opacity-50">
-              <p className="text-black font-bold leading-relaxed">
-                Instantly mint stablecoins that can be used anywhere.
-              </p>
-            </div>
-          </div>
+                  {/* Step 2 - PUSD */}
+                  <div className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative">
+                    <div className="flex-shrink-0 relative z-10">
+                      <div className="w-16 h-16 rounded-lg border-2 border-gray-600 hover:border-[#FF8C00] transition-colors duration-300 flex items-center justify-center bg-black group-hover:bg-[#FF8C00] group-hover:text-black">
+                        <span className="text-2xl font-bold text-white group-hover:text-black transition-colors">2</span>
+                      </div>
+                    </div>
+                    <div className="flex-grow">
+                      <h3 className="text-3xl font-bold text-white mb-3 group-hover:text-[#FF8C00] transition-colors">
+                        PUSD
+                      </h3>
+                      <p className="text-[#FF8C00] text-lg font-medium leading-relaxed">
+                        PUSD can be converted to sPUSD for yield generation.
+                      </p>
+                    </div>
+                  </div>
 
-          {/* Step 3 */}
-          <div
-            className="bg-black p-8 rounded-lg border border-gray-800 hover:border-[#FF8C00] transition duration-300 flex flex-col min-h-[220px] group"
-            style={{
-              backgroundImage:
-                "radial-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 1px)",
-              backgroundSize: "10px 10px",
-            }}
-          >
-            <div className="flex items-center mb-4">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#FF8C00] text-black font-bold text-xl mr-3 group-hover:bg-[#FFA500] transition-colors">
-                3
+                  {/* Step 3 - Restaking */}
+                  <div className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative">
+                    <div className="flex-shrink-0 relative z-10">
+                      <div className="w-16 h-16 rounded-lg border-2 border-gray-600 hover:border-[#FF8C00] transition-colors duration-300 flex items-center justify-center bg-black group-hover:bg-[#FF8C00] group-hover:text-black">
+                        <span className="text-2xl font-bold text-white group-hover:text-black transition-colors">3</span>
+                      </div>
+                    </div>
+                    <div className="flex-grow">
+                      <h3 className="text-3xl font-bold text-white mb-3 group-hover:text-[#FF8C00] transition-colors">
+                        RESTAKING
+                      </h3>
+                      <p className="text-[#FF8C00] text-lg font-medium leading-relaxed">
+                        Mint LST and delegate or undelegate to operators.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Step 4 - Loan */}
+                  <div className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative">
+                    <div className="flex-shrink-0 relative z-10">
+                      <div className="w-16 h-16 rounded-lg border-2 border-gray-600 hover:border-[#FF8C00] transition-colors duration-300 flex items-center justify-center bg-black group-hover:bg-[#FF8C00] group-hover:text-black">
+                        <span className="text-2xl font-bold text-white group-hover:text-black transition-colors">4</span>
+                      </div>
+                    </div>
+                    <div className="flex-grow">
+                      <h3 className="text-3xl font-bold text-white mb-3 group-hover:text-[#FF8C00] transition-colors">
+                        LOAN
+                      </h3>
+                      <p className="text-[#FF8C00] text-lg font-medium leading-relaxed">
+                        Take loans from operators using your collateral.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-xl font-bold text-white group-hover:text-gray-200 transition-colors">Earn Yield</h3>
             </div>
-            <div className="bg-orange-300 bg-opacity-80 p-4 rounded-lg border border-[#FFA500] border-opacity-50">
-              <p className="text-black font-bold leading-relaxed">
-                Earn yield while you hold your stablecoins.
-              </p>
+
+            {/* Right side - Space for future content */}
+            <div className="w-1/2 pl-8">
+              {/* This space is reserved for future content */}
             </div>
           </div>
         </div>
