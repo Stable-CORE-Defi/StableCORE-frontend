@@ -12,6 +12,7 @@ const RestakingScreen = () => {
   const [balance, setBalance] = useState("0");
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [lstLoading, setLstLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("delegate");
   const [notification, setNotification] = useState({
     show: false,
@@ -131,6 +132,47 @@ const RestakingScreen = () => {
     }
   };
 
+  // Handle LST mint (fixed amount of 10 LST)
+  const handleLstMint = async () => {
+    if (!walletClient || !publicClient) {
+      showNotification("Wallet not connected properly", "error");
+      return;
+    }
+
+    setLstLoading(true);
+    try {
+      // Convert 10 LST to units (18 decimals)
+      const lstAmountUnits = parseUnits("10", 18);
+
+      // Prepare the mint transaction
+      const { request } = await publicClient.simulateContract({
+        address: ContractAddresses.LST as `0x${string}`,
+        abi: LSTJson.abi,
+        functionName: "mint",
+        args: [lstAmountUnits],
+        account: address,
+      });
+
+      // Execute the transaction using the wallet's provider
+      const hash = await walletClient.writeContract(request);
+
+      // Wait for transaction to complete
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      // Update balance
+      fetchBalance();
+      showNotification("Successfully minted 10 LST!", "success");
+    } catch (error: unknown) {
+      console.error("Error minting LST:", error);
+      showNotification(
+        error instanceof Error ? error.message : "Failed to mint LST. Please try again.",
+        "error"
+      );
+    } finally {
+      setLstLoading(false);
+    }
+  };
+
   // Handle undelegate action (removeDelegation)
   const handleUndelegate = async () => {
     if (!amount || parseFloat(amount) <= 0) {
@@ -200,6 +242,35 @@ const RestakingScreen = () => {
             {notification.message}
           </div>
         )}
+
+        {/* LST Mint Button - Above Main Content */}
+        <div className="mb-6">
+          <div className="bg-black border border-gray-800 p-4 rounded-lg shadow-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-300 mb-1">
+                  Your LST Balance:{" "}
+                  <span className="text-[#FF8C00] font-bold">
+                    {balance} LST
+                  </span>
+                </p>
+                <p className="text-sm text-gray-400">
+                  Need LST to delegate? Get 10 LST for testing
+                </p>
+              </div>
+              
+              <button
+                onClick={handleLstMint}
+                disabled={lstLoading}
+                className={`px-6 py-3 rounded-md text-white font-medium transition-colors ${
+                  lstLoading ? "opacity-70" : ""
+                } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+              >
+                {lstLoading ? "Processing..." : "Mint 10 LST"}
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Main Content */}
         <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
