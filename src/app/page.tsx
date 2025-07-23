@@ -1,12 +1,47 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAccount, usePublicClient, useWalletClient } from "wagmi";
+import { parseUnits, formatUnits } from "viem";
 import StablecoinAnimation from "./components/StablecoinAnimation";
 import Link from "next/link";
 import Image from "next/image";
+import USDCJson from "@/contracts/USDC.sol/USDC.json";
+import PUSDJson from "@/contracts/PUSD.sol/PUSD.json";
+import LSTJson from "@/contracts/LST.sol/LST.json";
+import EigenJson from "@/contracts/Eigen.sol/Eigen.json";
+import ContractAddresses from "../deployed-address.json";
 
 const HomePage = () => {
+  const [selectedStep, setSelectedStep] = useState<string | null>(null);
+  const [amount, setAmount] = useState("");
+  const [usdcBalance, setUsdcBalance] = useState("0");
+  const [pusdBalance, setPusdBalance] = useState("0");
+  const [loading, setLoading] = useState(false);
+  const [usdcLoading, setUsdcLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [usdcError, setUsdcError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [usdcSuccess, setUsdcSuccess] = useState("");
+
+  // Restaking states
+  const [lstBalance, setLstBalance] = useState("0");
+  const [lstAmount, setLstAmount] = useState("");
+  const [lstLoading, setLstLoading] = useState(false);
+  const [restakingLoading, setRestakingLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("delegate");
+  const [delegatedAmount, setDelegatedAmount] = useState("0");
+  const [restakingNotification, setRestakingNotification] = useState({
+    show: false,
+    message: "",
+    type: "",
+  });
+
+  const { address, isConnected } = useAccount();
+  const publicClient = usePublicClient();
+  const { data: walletClient } = useWalletClient();
+
   const devnetAddresses = {
     USDC: "0x0230Af50C53eC0f30c7a4C85E4eE6e6165Afb45C",
     LST: "0x806fB8DbAF32176bE869FCa871dAdfa8d85cA4C5",
@@ -18,6 +53,163 @@ const HomePage = () => {
   };
   // above footer, show a table with devnet address from devnetAddresses
   const router = useRouter();
+
+  // Fetch balances
+  const fetchBalances = async () => {
+    if (!address || !publicClient) return;
+
+    try {
+      // Fetch USDC balance
+      const usdcBalanceData = await publicClient.readContract({
+        address: ContractAddresses.USDC as `0x${string}`,
+        abi: USDCJson.abi,
+        functionName: "balanceOf",
+        args: [address],
+      });
+
+      setUsdcBalance(formatUnits(usdcBalanceData as bigint, 18)); // USDC has 18 decimals
+
+      // Fetch PUSD balance
+      const pusdBalanceData = await publicClient.readContract({
+        address: ContractAddresses.PUSD as `0x${string}`,
+        abi: PUSDJson.abi,
+        functionName: "balanceOf",
+        args: [address],
+      });
+
+      setPusdBalance(formatUnits(pusdBalanceData as bigint, 18)); // PUSD has 18 decimals
+    } catch (err) {
+      console.error("Error fetching balances:", err);
+    }
+  };
+
+  // Fetch balances on mount and when address changes
+  useEffect(() => {
+    if (isConnected && address && publicClient) {
+      fetchBalances();
+    }
+  }, [address, isConnected, publicClient]);
+
+  // Handle input change for PUSD
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Only allow numbers and decimals
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      setAmount(value);
+    }
+  };
+
+  // Handle USDC mint (fixed amount of 10 USDC)
+  const handleUsdcMint = async () => {
+    if (!walletClient || !publicClient) {
+      setUsdcError("Wallet not connected properly");
+      return;
+    }
+
+    setUsdcLoading(true);
+    setUsdcError("");
+    setUsdcSuccess("");
+
+    try {
+      // Convert 10 USDC to units (18 decimals)
+      const usdcAmountUnits = parseUnits("10", 18);
+
+      // Prepare the mint transaction
+      const { request } = await publicClient.simulateContract({
+        address: ContractAddresses.USDC as `0x${string}`,
+        abi: USDCJson.abi,
+        functionName: "mint",
+        args: [usdcAmountUnits],
+        account: address,
+      });
+
+      // Execute the transaction using the wallet's provider
+      const hash = await walletClient.writeContract(request);
+
+      // Wait for transaction to complete
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      // Update balance
+      fetchBalances();
+      setUsdcSuccess("Successfully minted 10 USDC!");
+    } catch (err: unknown) {
+      console.error("Error minting USDC:", err);
+      setUsdcError(
+        err instanceof Error
+          ? err.message
+          : "Failed to mint USDC. Please try again."
+      );
+    } finally {
+      setUsdcLoading(false);
+    }
+  };
+
+  // Handle approve and mint PUSD
+  const handleMint = async () => {
+    if (!amount || parseFloat(amount) <= 0) {
+      setError("Please enter a valid amount");
+      return;
+    }
+
+    if (!walletClient || !publicClient) {
+      setError("Wallet not connected properly");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      // First approve USDC spending
+      const usdcAmount = parseUnits(amount, 18); // USDC has 18 decimals
+
+      // Check if we have enough USDC
+      if (parseFloat(usdcBalance) < parseFloat(amount)) {
+        setError(`Insufficient USDC balance. You have ${usdcBalance} USDC.`);
+        setLoading(false);
+        return;
+      }
+
+      // Approve USDC
+      const { request: approveRequest } = await publicClient.simulateContract({
+        address: ContractAddresses.USDC as `0x${string}`,
+        abi: USDCJson.abi,
+        functionName: "approve",
+        args: [ContractAddresses.PUSD as `0x${string}`, usdcAmount],
+        account: address,
+      });
+
+      const approveHash = await walletClient.writeContract(approveRequest);
+      await publicClient.waitForTransactionReceipt({ hash: approveHash });
+
+      // Now call depositAndMint on PUSD contract
+      const { request: mintRequest } = await publicClient.simulateContract({
+        address: ContractAddresses.PUSD as `0x${string}`,
+        abi: PUSDJson.abi,
+        functionName: "depositAndMint",
+        args: [usdcAmount],
+        account: address,
+      });
+
+      const mintHash = await walletClient.writeContract(mintRequest);
+      await publicClient.waitForTransactionReceipt({ hash: mintHash });
+
+      // Update balances and reset form
+      fetchBalances();
+      setAmount("");
+      setSuccess(`Successfully minted PUSD!`);
+    } catch (err: unknown) {
+      console.error("Error minting PUSD:", err);
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Failed to mint PUSD. Please try again.";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -159,7 +351,10 @@ const HomePage = () => {
                 
                 <div className="space-y-12">
                   {/* Step 1 - Mint */}
-                  <div className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative">
+                  <div 
+                    onClick={() => setSelectedStep("mint")}
+                    className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative"
+                  >
                     <div className="flex-shrink-0 relative z-10">
                       <div className="w-16 h-16 rounded-lg border-2 border-gray-600 hover:border-[#FF8C00] transition-colors duration-300 flex items-center justify-center bg-black group-hover:bg-[#FF8C00] group-hover:text-black">
                         <span className="text-2xl font-bold text-white group-hover:text-black transition-colors">1</span>
@@ -193,7 +388,10 @@ const HomePage = () => {
                   </div>
 
                   {/* Step 3 - Restaking */}
-                  <div className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative">
+                  <div 
+                    onClick={() => setSelectedStep("restaking")}
+                    className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative"
+                  >
                     <div className="flex-shrink-0 relative z-10">
                       <div className="w-16 h-16 rounded-lg border-2 border-gray-600 hover:border-[#FF8C00] transition-colors duration-300 flex items-center justify-center bg-black group-hover:bg-[#FF8C00] group-hover:text-black">
                         <span className="text-2xl font-bold text-white group-hover:text-black transition-colors">3</span>
@@ -229,9 +427,179 @@ const HomePage = () => {
               </div>
             </div>
 
-            {/* Right side - Space for future content */}
+            {/* Right side - Dynamic content based on selected step */}
             <div className="w-1/2 pl-8">
-              {/* This space is reserved for future content */}
+              {selectedStep === "mint" && (
+                <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
+                  <h2 className="text-2xl font-bold mb-6 text-[#FF8C00] font-mono">
+                    MINT STABLECOINS
+                  </h2>
+
+                  {!isConnected ? (
+                    <div className="bg-black border border-gray-800 p-4 rounded-lg">
+                      <p className="text-center text-gray-300">
+                        Please connect your wallet to mint stablecoins
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* USDC Mint Button */}
+                      <div className="mb-6">
+                        <div className="bg-black border border-gray-800 p-4 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-gray-300 mb-1">
+                                Your USDC Balance:{" "}
+                                <span className="text-[#FF8C00] font-bold">
+                                  {usdcBalance} USDC
+                                </span>
+                              </p>
+                              <p className="text-sm text-gray-400">
+                                Need USDC to mint PUSD? Get 10 USDC for testing
+                              </p>
+                            </div>
+                            
+                            <button
+                              onClick={handleUsdcMint}
+                              disabled={usdcLoading}
+                              className={`px-4 py-2 rounded-md text-white font-medium transition-colors ${
+                                usdcLoading ? "opacity-70" : ""
+                              } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+                            >
+                              {usdcLoading ? "Processing..." : "Mint 10 USDC"}
+                            </button>
+                          </div>
+
+                          {usdcError && (
+                            <p className="mt-2 text-red-400 text-sm">Error: {usdcError}</p>
+                          )}
+
+                          {usdcSuccess && (
+                            <p className="mt-2 text-green-400 text-sm">{usdcSuccess}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* PUSD Mint Box */}
+                      <div className="bg-black border border-gray-800 p-4 rounded-lg mb-4">
+                        <h3 className="text-xl font-bold mb-4 text-[#FF8C00] font-mono">
+                          MINT PUSD
+                        </h3>
+                        
+                        <div className="mb-4">
+                          <p className="text-gray-300 mb-2">
+                            Your USDC Balance:{" "}
+                            <span className="text-[#FF8C00] font-bold">
+                              {usdcBalance} USDC
+                            </span>
+                          </p>
+                          <p className="text-gray-300 mb-4">
+                            Your PUSD Balance:{" "}
+                            <span className="text-[#FF8C00] font-bold">
+                              {pusdBalance} PUSD
+                            </span>
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <label
+                              htmlFor="amount"
+                              className="block text-sm font-medium text-[#FF8C00] mb-1"
+                            >
+                              Deposit
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                id="amount"
+                                value={amount}
+                                onChange={handleAmountChange}
+                                placeholder="0.00"
+                                className="w-full px-3 py-2 bg-black border border-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C00]"
+                                disabled={loading}
+                              />
+                              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <span className="text-gray-400">USDC</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-[#FF8C00] mb-1">
+                              Receive
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={amount || "0.0"}
+                                readOnly
+                                className="w-full px-3 py-2 bg-gray-800 bg-opacity-50 border border-gray-700 text-white rounded-md"
+                              />
+                              <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <span className="text-gray-400">PUSD</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={handleMint}
+                          disabled={loading || !amount}
+                          className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${
+                            loading ? "opacity-70" : ""
+                          } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+                        >
+                          {loading ? "Processing..." : "Mint PUSD"}
+                        </button>
+
+                        {error && (
+                          <p className="mt-2 text-red-400 text-sm">Error: {error}</p>
+                        )}
+
+                        {success && (
+                          <p className="mt-2 text-green-400 text-sm">{success}</p>
+                        )}
+                      </div>
+
+                      <div className="bg-black border border-gray-800 p-4 rounded-lg">
+                        <h3 className="text-lg font-semibold mb-2 text-[#FF8C00]">
+                          About PUSD
+                        </h3>
+                        <p className="text-gray-300 mb-2">
+                          PUSD is a yield-bearing stablecoin backed by USDC collateral.
+                        </p>
+                        <p className="text-gray-300">
+                          When you mint PUSD, your USDC is deposited into the protocol and
+                          used to generate yield through secure lending markets.
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {selectedStep === "restaking" && (
+                <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
+                  <h2 className="text-2xl font-bold mb-6 text-[#FF8C00] font-mono">
+                    RESTAKING
+                  </h2>
+                  <p className="text-gray-300">
+                    Restaking functionality will be available here. Click on the RESTAKING step to see the interface.
+                  </p>
+                </div>
+              )}
+
+              {!selectedStep && (
+                <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
+                  <h2 className="text-2xl font-bold mb-6 text-[#FF8C00] font-mono">
+                    SELECT A STEP
+                  </h2>
+                  <p className="text-gray-300">
+                    Click on any step in the "How StableCORE Works" section to see the corresponding interface.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -269,8 +637,8 @@ const HomePage = () => {
             <h3 className="text-xl font-bold mb-4 text-white group-hover:text-gray-200 transition-colors">
               NON-CUSTODIAL
             </h3>
-            <div className="bg-orange-300 bg-opacity-80 p-4 rounded-lg border border-[#FFA500] border-opacity-50">
-              <p className="text-black font-bold leading-relaxed">
+            <div className="bg-black p-4 rounded-lg border border-[#FF8C00] border-opacity-50">
+              <p className="text-[#FF8C00] font-bold leading-relaxed">
                 No party has access to unsecured user deposits
               </p>
             </div>
@@ -288,8 +656,8 @@ const HomePage = () => {
             <h3 className="text-xl font-bold mb-4 text-white group-hover:text-gray-200 transition-colors">
               PRIVATE CREDIT
             </h3>
-            <div className="bg-orange-300 bg-opacity-80 p-4 rounded-lg border border-[#FFA500] border-opacity-50">
-              <p className="text-black font-bold leading-relaxed">
+            <div className="bg-black p-4 rounded-lg border border-[#FF8C00] border-opacity-50">
+              <p className="text-[#FF8C00] font-bold leading-relaxed">
                 Competitive yield generated by efficient markets
               </p>
             </div>
@@ -307,8 +675,8 @@ const HomePage = () => {
             <h3 className="text-xl font-bold mb-4 text-white group-hover:text-gray-200 transition-colors">
               FULLY COVERED YIELD
             </h3>
-            <div className="bg-orange-300 bg-opacity-80 p-4 rounded-lg border border-[#FFA500] border-opacity-50">
-              <p className="text-black font-bold leading-relaxed">
+            <div className="bg-black p-4 rounded-lg border border-[#FF8C00] border-opacity-50">
+              <p className="text-[#FF8C00] font-bold leading-relaxed">
                 Shared security model underwrites counterparty activity
               </p>
             </div>
