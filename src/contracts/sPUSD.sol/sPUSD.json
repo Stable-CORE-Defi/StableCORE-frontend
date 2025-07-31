@@ -526,7 +526,7 @@
       },
       {
         "inputs": [],
-        "name": "loanedPUSDCAmount",
+        "name": "loanedPUSBDAmount",
         "outputs": [
           {
             "internalType": "uint256",
@@ -897,7 +897,7 @@
         "inputs": [
           {
             "internalType": "uint256",
-            "name": "pusdcAmount",
+            "name": "pUSBDAmount",
             "type": "uint256"
           },
           {
@@ -934,7 +934,7 @@
         "inputs": [
           {
             "internalType": "uint256",
-            "name": "pusdcAmount",
+            "name": "pUSBDAmount",
             "type": "uint256"
           },
           {

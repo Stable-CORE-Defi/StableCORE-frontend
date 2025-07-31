@@ -50,8 +50,8 @@ export const supportedChains = {
 
 // Update the interfaces
 interface BaseAddresses {
-  USDC: string;
-  LST: string;
+  USBD: string;
+  stCORE: string;
   PUSD: string;
   sPUSD: string;
   Operator: string;
@@ -68,17 +68,17 @@ export const contractAddresses: {
   coreTestnet2: CoreTestnet2Addresses;
 } = {
   hardhat: {
-    USDC: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-    PUSD: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0', // Changed from PUSDC to PUSD
-    LST: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
+    USBD: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    PUSD: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0', // Changed from PUSBD to PUSD
+    stCORE: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
     sPUSD: '0x0165878A594ca255338adfa4d48449f69242Eb8F',
     Eigen: '0x0165878A594ca255338adfa4d48449f69242Eb8F',
     Operator: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
     LoanManager: '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6',
   },
   coreTestnet2: {
-    USDC: '0x8182BEF887361F3312D344e229160C389616b6F0',
-    LST: '0xBB6f0beF915a4baaF6818c11BFeb648041f70959',
+    USBD: '0x8182BEF887361F3312D344e229160C389616b6F0',
+    stCORE: '0xBB6f0beF915a4baaF6818c11BFeb648041f70959',
     PUSD: '0x61edDE0E4B97D878C14F5f5706309d4572550Afa',
     sPUSD: '0xe1Fd27F4390DcBE165f4D60DBF821e4B9Bb02dEd',
     Operator: '0xc582Bc0317dbb0908203541971a358c44b1F3766',
@@ -110,7 +110,7 @@ export const ABIs = {
   operatorRegistry: [
     // Add ABI here
   ],
-  restakingLST: [
+  restakingstCORE: [
     // Add ABI here
   ],
 };

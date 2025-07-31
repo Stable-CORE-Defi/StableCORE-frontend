@@ -44,16 +44,16 @@ const Navbar = () => {
             SPUSD
           </Link>
           {/* <Link
-            href="/usdc"
+            href="/USBD"
             className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
-            USDC
+            USBD
           </Link>
           <Link
-            href="/lst"
+            href="/stCORE"
             className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
-            LST
+            stCORE
           </Link> */}
         </div>
 

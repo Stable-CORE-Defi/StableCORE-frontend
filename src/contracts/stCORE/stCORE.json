@@ -1,7 +1,7 @@
 {
     "_format": "hh-sol-artifact-1",
-    "contractName": "LST",
-    "sourceName": "contracts/LST.sol",
+    "contractName": "stCORE",
+    "sourceName": "contracts/stCORE.sol",
     "abi": [
       {
         "inputs": [
@@ -322,7 +322,7 @@
             "type": "uint256"
           }
         ],
-        "name": "convertToUSDCAndSendToPUSD",
+        "name": "convertToUSBDAndSendToPUSD",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -442,11 +442,11 @@
         "inputs": [
           {
             "internalType": "address",
-            "name": "_usdcAddress",
+            "name": "_USBDAddress",
             "type": "address"
           }
         ],
-        "name": "setUSDCAddress",
+        "name": "setUSBDAddress",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -563,10 +563,10 @@
       },
       {
         "inputs": [],
-        "name": "usdc",
+        "name": "USBD",
         "outputs": [
           {
-            "internalType": "contract USDC",
+            "internalType": "contract USBD",
             "name": "",
             "type": "address"
           }

@@ -68,7 +68,7 @@ export default function CapAdminScreen() {
     }
   };
 
-  // Add this function to fetch the operator's delegated LST
+  // Add this function to fetch the operator's delegated stCORE
   const fetchOperatorDelegation = async () => {
     if (!publicClient) return;
 
@@ -81,11 +81,11 @@ export default function CapAdminScreen() {
         args: [address],
       });
 
-      // Format the amount with 18 decimals (for LST)
+      // Format the amount with 18 decimals (for stCORE)
       setOperatorDelegation(formatUnits(delegatedData as bigint, 18));
     } catch (err) {
       console.error("Error fetching operator delegation:", err);
-      // If there's an error, we'll show 0 LST
+      // If there's an error, we'll show 0 stCORE
       setOperatorDelegation("0");
     }
   };
@@ -202,7 +202,7 @@ export default function CapAdminScreen() {
                           ContractAddresses.Operator.length - 4
                         )}
                       </td>
-                      <td className="py-4 pr-4">{operatorDelegation} LST</td>
+                      <td className="py-4 pr-4">{operatorDelegation} stCORE</td>
                       <td className="py-4 pr-4">
                         <span className="px-2 py-1 rounded text-xs bg-green-900 text-green-300">
                           Active
@@ -225,9 +225,9 @@ export default function CapAdminScreen() {
                     {/* Second Operator - Plume */}
                     <tr className="border-b border-gray-800">
                       <td className="py-4 pr-4">#2</td>
-                      <td className="py-4 pr-4">Plume</td>
+                      <td className="py-4 pr-4">Colend</td>
                       <td className="py-4 pr-4">0x3Bc8...9F2a</td>
-                      <td className="py-4 pr-4">0 LST</td>
+                      <td className="py-4 pr-4">0 stCORE</td>
                       <td className="py-4 pr-4">
                         <span className="px-2 py-1 rounded text-xs bg-gray-800 text-gray-400">
                           Inactive
@@ -244,9 +244,9 @@ export default function CapAdminScreen() {
                     {/* Third Operator - TrueFi */}
                     <tr className="border-b border-gray-800">
                       <td className="py-4 pr-4">#3</td>
-                      <td className="py-4 pr-4">TrueFi</td>
+                      <td className="py-4 pr-4">Sumer.Money</td>
                       <td className="py-4 pr-4">0x5Df1...4E3b</td>
-                      <td className="py-4 pr-4">0 LST</td>
+                      <td className="py-4 pr-4">0 stCORE</td>
                       <td className="py-4 pr-4">
                         <span className="px-2 py-1 rounded text-xs bg-gray-800 text-gray-400">
                           Inactive
@@ -336,7 +336,8 @@ export default function CapAdminScreen() {
                 <div className="mb-6">
                   <label className="block text-gray-300 mb-2">Operator</label>
                   <div className="w-full p-4 bg-gray-900 rounded-lg text-white">
-                    ONDO Finance ({ContractAddresses.Operator.substring(0, 6)}
+                  Avalon Finance
+                  ({ContractAddresses.Operator.substring(0, 6)}
                     ...
                     {ContractAddresses.Operator.substring(
                       ContractAddresses.Operator.length - 4

@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
-import LSTJson from "@/contracts/LST.sol/LST.json";
+import stCOREJson from "@/contracts/stCORE/stCORE.json";
 import ContractAddresses from "../../deployed-address.json";
 
-const LSTMint = () => {
+const stCOREMint = () => {
   const [amount, setAmount] = useState("");
   const [balance, setBalance] = useState("0");
   const [loading, setLoading] = useState(false);
@@ -23,13 +23,13 @@ const LSTMint = () => {
 
     try {
       const balanceData = await publicClient.readContract({
-        address: ContractAddresses.LST as `0x${string}`,
-        abi: LSTJson.abi,
+        address: ContractAddresses.stCORE as `0x${string}`,
+        abi: stCOREJson.abi,
         functionName: "balanceOf",
         args: [address],
       });
 
-      setBalance(formatUnits(balanceData as bigint, 18)); // LST has 18 decimals
+      setBalance(formatUnits(balanceData as bigint, 18)); // stCORE has 18 decimals
     } catch (err) {
       console.error("Error fetching balance:", err);
     }
@@ -77,8 +77,8 @@ const LSTMint = () => {
 
       // Prepare the mint transaction
       const { request } = await publicClient.simulateContract({
-        address: ContractAddresses.LST as `0x${string}`,
-        abi: LSTJson.abi,
+        address: ContractAddresses.stCORE as `0x${string}`,
+        abi: stCOREJson.abi,
         functionName: "mint",
         args: [amountInWei],
         account: address,
@@ -93,13 +93,13 @@ const LSTMint = () => {
       // Update balance and reset form
       fetchBalance();
       setAmount("");
-      setSuccess(`Successfully minted ${amount} LST!`);
+      setSuccess(`Successfully minted ${amount} stCORE!`);
     } catch (err: unknown) {
-      console.error("Error minting LST:", err);
+      console.error("Error minting stCORE:", err);
       const errorMessage =
         err instanceof Error
           ? err.message
-          : "Failed to mint LST. Please try again.";
+          : "Failed to mint stCORE. Please try again.";
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -118,13 +118,13 @@ const LSTMint = () => {
             fontFamily: "monospace",
           }}
         >
-          LST MINTER
+          stCORE MINTER
         </h1>
 
         {!isConnected ? (
           <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg mb-6 backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
             <p className="text-center text-gray-300">
-              Please connect your wallet to mint LST
+              Please connect your wallet to mint stCORE
             </p>
           </div>
         ) : (
@@ -132,9 +132,9 @@ const LSTMint = () => {
             <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg mb-6 backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
               <div className="mb-4">
                 <p className="text-gray-300 mb-2">
-                  Your LST Balance:{" "}
+                  Your stCORE Balance:{" "}
                   <span className="text-[#FF8C00] font-bold">
-                    {balance} LST
+                    {balance} stCORE
                   </span>
                 </p>
               </div>
@@ -164,7 +164,7 @@ const LSTMint = () => {
                   loading ? "opacity-70" : ""
                 } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
               >
-                {loading ? "Processing..." : "Mint LST"}
+                {loading ? "Processing..." : "Mint stCORE"}
               </button>
 
               {error && (
@@ -178,18 +178,18 @@ const LSTMint = () => {
 
             <div className="bg-black border border-gray-800 p-4 rounded-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
               <h2 className="text-lg font-semibold mb-2 text-[#FF8C00]">
-                About LST
+                About stCORE
               </h2>
               <p className="text-gray-300 mb-2">
-                This is a testnet version of Liquid Staking Tokens (LST) that
+                This is a testnet version of Liquid Staking Tokens (stCORE) that
                 you can mint freely for testing purposes.
               </p>
               <p className="text-gray-300">
-                In production, LSTs represent staked ETH that can be used in
+                In production, stCOREs represent staked ETH that can be used in
                 DeFi while earning staking rewards.
               </p>
               <p className="text-gray-300 mt-2">
-                LSTs are used in the StableCORE protocol for restaking,
+                stCOREs are used in the StableCORE protocol for restaking,
                 allowing operators to provide security to multiple networks
                 simultaneously.
               </p>
@@ -201,4 +201,4 @@ const LSTMint = () => {
   );
 };
 
-export default LSTMint;
+export default stCOREMint;

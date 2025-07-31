@@ -3,20 +3,20 @@
 import React, { useState, useEffect } from "react";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
-import USDCJson from "@/contracts/USDC.sol/USDC.json";
+import USBDJson from "@/contracts/USBD/USBD.json";
 import PUSDJson from "@/contracts/PUSD.sol/PUSD.json";
 import ContractAddresses from "../../deployed-address.json";
 
 const MintPage = () => {
   const [amount, setAmount] = useState("");
-  const [usdcBalance, setUsdcBalance] = useState("0");
+  const [USBDBalance, setUSBDBalance] = useState("0");
   const [pusdBalance, setPusdBalance] = useState("0");
   const [loading, setLoading] = useState(false);
-  const [usdcLoading, setUsdcLoading] = useState(false);
+  const [USBDLoading, setUSBDLoading] = useState(false);
   const [error, setError] = useState("");
-  const [usdcError, setUsdcError] = useState("");
+  const [USBDError, setUSBDError] = useState("");
   const [success, setSuccess] = useState("");
-  const [usdcSuccess, setUsdcSuccess] = useState("");
+  const [USBDSuccess, setUSBDSuccess] = useState("");
 
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
@@ -27,15 +27,15 @@ const MintPage = () => {
     if (!address || !publicClient) return;
 
     try {
-      // Fetch USDC balance
-      const usdcBalanceData = await publicClient.readContract({
-        address: ContractAddresses.USDC as `0x${string}`,
-        abi: USDCJson.abi,
+      // Fetch USBD balance
+      const USBDBalanceData = await publicClient.readContract({
+        address: ContractAddresses.USBD as `0x${string}`,
+        abi: USBDJson.abi,
         functionName: "balanceOf",
         args: [address],
       });
 
-      setUsdcBalance(formatUnits(usdcBalanceData as bigint, 18)); // USDC has 18 decimals
+      setUSBDBalance(formatUnits(USBDBalanceData as bigint, 18)); // USBD has 18 decimals
 
       // Fetch PUSD balance
       const pusdBalanceData = await publicClient.readContract({
@@ -69,27 +69,27 @@ const MintPage = () => {
 
 
 
-  // Handle USDC mint (fixed amount of 10 USDC)
-  const handleUsdcMint = async () => {
+  // Handle USBD mint (fixed amount of 10 USBD)
+  const handleUSBDMint = async () => {
     if (!walletClient || !publicClient) {
-      setUsdcError("Wallet not connected properly");
+      setUSBDError("Wallet not connected properly");
       return;
     }
 
-    setUsdcLoading(true);
-    setUsdcError("");
-    setUsdcSuccess("");
+    setUSBDLoading(true);
+    setUSBDError("");
+    setUSBDSuccess("");
 
     try {
-      // Convert 10 USDC to units (18 decimals)
-      const usdcAmountUnits = parseUnits("10", 18);
+      // Convert 10 USBD to units (18 decimals)
+      const USBDAmountUnits = parseUnits("10", 18);
 
       // Prepare the mint transaction
       const { request } = await publicClient.simulateContract({
-        address: ContractAddresses.USDC as `0x${string}`,
-        abi: USDCJson.abi,
+        address: ContractAddresses.USBD as `0x${string}`,
+        abi: USBDJson.abi,
         functionName: "mint",
-        args: [usdcAmountUnits],
+        args: [USBDAmountUnits],
         account: address,
       });
 
@@ -101,16 +101,16 @@ const MintPage = () => {
 
       // Update balance
       fetchBalances();
-      setUsdcSuccess("Successfully minted 10 USDC!");
+      setUSBDSuccess("Successfully minted 10 USBD!");
     } catch (err: unknown) {
-      console.error("Error minting USDC:", err);
-      setUsdcError(
+      console.error("Error minting USBD:", err);
+      setUSBDError(
         err instanceof Error
           ? err.message
-          : "Failed to mint USDC. Please try again."
+          : "Failed to mint USBD. Please try again."
       );
     } finally {
-      setUsdcLoading(false);
+      setUSBDLoading(false);
     }
   };
 
@@ -131,22 +131,22 @@ const MintPage = () => {
     setSuccess("");
 
     try {
-      // First approve USDC spending
-      const usdcAmount = parseUnits(amount, 18); // USDC has 18 decimals
+      // First approve USBD spending
+      const USBDAmount = parseUnits(amount, 18); // USBD has 18 decimals
 
-      // Check if we have enough USDC
-      if (parseFloat(usdcBalance) < parseFloat(amount)) {
-        setError(`Insufficient USDC balance. You have ${usdcBalance} USDC.`);
+      // Check if we have enough USBD
+      if (parseFloat(USBDBalance) < parseFloat(amount)) {
+        setError(`Insufficient USBD balance. You have ${USBDBalance} USBD.`);
         setLoading(false);
         return;
       }
 
-      // Approve USDC
+      // Approve USBD
       const { request: approveRequest } = await publicClient.simulateContract({
-        address: ContractAddresses.USDC as `0x${string}`,
-        abi: USDCJson.abi,
+        address: ContractAddresses.USBD as `0x${string}`,
+        abi: USBDJson.abi,
         functionName: "approve",
-        args: [ContractAddresses.PUSD as `0x${string}`, usdcAmount],
+        args: [ContractAddresses.PUSD as `0x${string}`, USBDAmount],
         account: address,
       });
 
@@ -158,7 +158,7 @@ const MintPage = () => {
         address: ContractAddresses.PUSD as `0x${string}`,
         abi: PUSDJson.abi,
         functionName: "depositAndMint",
-        args: [usdcAmount],
+        args: [USBDAmount],
         account: address,
       });
 
@@ -204,39 +204,39 @@ const MintPage = () => {
           </div>
         ) : (
           <>
-            {/* USDC Mint Button - Above PUSD Box */}
+            {/* USBD Mint Button - Above PUSD Box */}
             <div className="max-w-2xl mx-auto mb-6">
               <div className="bg-black border border-gray-800 p-4 rounded-lg shadow-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-300 mb-1">
-                      Your USDC Balance:{" "}
+                      Your USBD Balance:{" "}
                       <span className="text-[#FF8C00] font-bold">
-                        {usdcBalance} USDC
+                        {USBDBalance} USBD
                       </span>
                     </p>
                     <p className="text-sm text-gray-400">
-                      Need USDC to mint PUSD? Get 10 USDC for testing
+                      Need USBD to mint PUSD? Get 10 USBD for testing
                     </p>
                   </div>
                   
                   <button
-                    onClick={handleUsdcMint}
-                    disabled={usdcLoading}
+                    onClick={handleUSBDMint}
+                    disabled={USBDLoading}
                     className={`px-6 py-3 rounded-md text-white font-medium transition-colors ${
-                      usdcLoading ? "opacity-70" : ""
+                      USBDLoading ? "opacity-70" : ""
                     } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
                   >
-                    {usdcLoading ? "Processing..." : "Mint 10 USDC"}
+                    {USBDLoading ? "Processing..." : "Mint 10 USBD"}
                   </button>
                 </div>
 
-                {usdcError && (
-                  <p className="mt-2 text-red-400 text-sm">Error: {usdcError}</p>
+                {USBDError && (
+                  <p className="mt-2 text-red-400 text-sm">Error: {USBDError}</p>
                 )}
 
-                {usdcSuccess && (
-                  <p className="mt-2 text-green-400 text-sm">{usdcSuccess}</p>
+                {USBDSuccess && (
+                  <p className="mt-2 text-green-400 text-sm">{USBDSuccess}</p>
                 )}
               </div>
             </div>
@@ -250,9 +250,9 @@ const MintPage = () => {
                 
                 <div className="mb-4">
                   <p className="text-gray-300 mb-2">
-                    Your USDC Balance:{" "}
+                    Your USBD Balance:{" "}
                     <span className="text-[#FF8C00] font-bold">
-                      {usdcBalance} USDC
+                      {USBDBalance} USBD
                     </span>
                   </p>
                   <p className="text-gray-300 mb-4">
@@ -282,7 +282,7 @@ const MintPage = () => {
                         disabled={loading}
                       />
                       <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                        <span className="text-gray-400">USDC</span>
+                        <span className="text-gray-400">USBD</span>
                       </div>
                     </div>
                   </div>
@@ -329,10 +329,10 @@ const MintPage = () => {
                   About PUSD
                 </h2>
                 <p className="text-gray-300 mb-2">
-                  PUSD is a yield-bearing stablecoin backed by USDC collateral.
+                  PUSD is a yield-bearing stablecoin backed by USBD collateral.
                 </p>
                 <p className="text-gray-300">
-                  When you mint PUSD, your USDC is deposited into the protocol and
+                  When you mint PUSD, your USBD is deposited into the protocol and
                   used to generate yield through secure lending markets.
                 </p>
               </div>

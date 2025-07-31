@@ -254,7 +254,7 @@
           },
           {
             "internalType": "uint256",
-            "name": "loanedUSDCAmount",
+            "name": "loanedUSBDAmount",
             "type": "uint256"
           },
           {
@@ -302,7 +302,7 @@
           },
           {
             "internalType": "uint256",
-            "name": "loanedUSDCAmount",
+            "name": "loanedUSBDAmount",
             "type": "uint256"
           },
           {

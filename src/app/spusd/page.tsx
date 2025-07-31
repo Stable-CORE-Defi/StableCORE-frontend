@@ -10,7 +10,7 @@ import ContractAddresses from "../../deployed-address.json";
 const SPUSDPage = () => {
   const [activeTab, setActiveTab] = useState("deposit");
   const [amount, setAmount] = useState("");
-  const [usdcBalance, setUsdcBalance] = useState("0");
+  const [USBDBalance, setUSBDBalance] = useState("0");
   const [spusdBalance, setSpusdBalance] = useState("0");
   const [shareBalance, setShareBalance] = useState("0");
   const [conversionRate, setConversionRate] = useState("1");
@@ -37,7 +37,7 @@ const SPUSDPage = () => {
         functionName: "balanceOf",
         args: [address],
       })) as bigint;
-      setUsdcBalance(formatUnits(pusdBalanceData, 18));
+      setUSBDBalance(formatUnits(pusdBalanceData, 18));
 
       // Fetch sPUSD balance (shares)
       const shareBalanceData = (await publicClient.readContract({
@@ -279,7 +279,7 @@ const SPUSDPage = () => {
             <p className="text-gray-300 mb-2">
               Your PUSD Balance:{" "}
               <span className="text-[#FF8C00] font-bold">
-                {formatNumber(usdcBalance)} PUSD
+                {formatNumber(USBDBalance)} PUSD
               </span>
             </p>
             <p className="text-gray-300 mb-2">
@@ -342,7 +342,7 @@ const SPUSDPage = () => {
             About sPUSD Vault
           </h2>
           <p className="text-gray-300 mb-2">
-            sPUSD is an ERC4626 tokenized vault that accepts USDC deposits and
+            sPUSD is an ERC4626 tokenized vault that accepts USBD deposits and
             provides sPUSD shares in return.
           </p>
           <p className="text-gray-300">

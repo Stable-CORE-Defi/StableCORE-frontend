@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
-import LSTJson from "@/contracts/LST.sol/LST.json";
+import stCOREJson from "@/contracts/stCORE/stCORE.json";
 import EigenJson from "@/contracts/Eigen.sol/Eigen.json";
 import ContractAddresses from "../../deployed-address.json";
 
@@ -12,7 +12,7 @@ const RestakingScreen = () => {
   const [balance, setBalance] = useState("0");
   const [amount, setAmount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [lstLoading, setLstLoading] = useState(false);
+  const [stCORELoading, setstCORELoading] = useState(false);
   const [activeTab, setActiveTab] = useState("delegate");
   const [notification, setNotification] = useState({
     show: false,
@@ -25,14 +25,14 @@ const RestakingScreen = () => {
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
 
-  // Fetch LST balance
+  // Fetch stCORE balance
   const fetchBalance = async () => {
     if (!address || !publicClient) return;
 
     try {
       const balanceData = await publicClient.readContract({
-        address: ContractAddresses.LST as `0x${string}`,
-        abi: LSTJson.abi,
+        address: ContractAddresses.stCORE as `0x${string}`,
+        abi: stCOREJson.abi,
         functionName: "balanceOf",
         args: [address],
       });
@@ -119,7 +119,7 @@ const RestakingScreen = () => {
       // Update balance
       fetchBalance();
 
-      showNotification(`Successfully delegated ${amount} LST`, "success");
+      showNotification(`Successfully delegated ${amount} stCORE`, "success");
       setAmount("");
     } catch (error: unknown) {
       console.error("Delegation error:", error);
@@ -132,24 +132,24 @@ const RestakingScreen = () => {
     }
   };
 
-  // Handle LST mint (fixed amount of 10 LST)
-  const handleLstMint = async () => {
+  // Handle stCORE mint (fixed amount of 10 stCORE)
+  const handlestCOREMint = async () => {
     if (!walletClient || !publicClient) {
       showNotification("Wallet not connected properly", "error");
       return;
     }
 
-    setLstLoading(true);
+    setstCORELoading(true);
     try {
-      // Convert 10 LST to units (18 decimals)
-      const lstAmountUnits = parseUnits("10", 18);
+      // Convert 10 stCORE to units (18 decimals)
+      const stCOREAmountUnits = parseUnits("10", 18);
 
       // Prepare the mint transaction
       const { request } = await publicClient.simulateContract({
-        address: ContractAddresses.LST as `0x${string}`,
-        abi: LSTJson.abi,
+        address: ContractAddresses.stCORE as `0x${string}`,
+        abi: stCOREJson.abi,
         functionName: "mint",
-        args: [lstAmountUnits],
+        args: [stCOREAmountUnits],
         account: address,
       });
 
@@ -161,15 +161,15 @@ const RestakingScreen = () => {
 
       // Update balance
       fetchBalance();
-      showNotification("Successfully minted 10 LST!", "success");
+      showNotification("Successfully minted 10 stCORE!", "success");
     } catch (error: unknown) {
-      console.error("Error minting LST:", error);
+      console.error("Error minting stCORE:", error);
       showNotification(
-        error instanceof Error ? error.message : "Failed to mint LST. Please try again.",
+        error instanceof Error ? error.message : "Failed to mint stCORE. Please try again.",
         "error"
       );
     } finally {
-      setLstLoading(false);
+      setstCORELoading(false);
     }
   };
 
@@ -202,7 +202,7 @@ const RestakingScreen = () => {
       // Update balance
       fetchBalance();
 
-      showNotification(`Successfully undelegated ${amount} LST`, "success");
+      showNotification(`Successfully undelegated ${amount} stCORE`, "success");
       setAmount("");
     } catch (error: unknown) {
       console.error("Undelegation error:", error);
@@ -243,30 +243,30 @@ const RestakingScreen = () => {
           </div>
         )}
 
-        {/* LST Mint Button - Above Main Content */}
+        {/* stCORE Mint Button - Above Main Content */}
         <div className="mb-6">
           <div className="bg-black border border-gray-800 p-4 rounded-lg shadow-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-300 mb-1">
-                  Your LST Balance:{" "}
+                  Your stCORE Balance:{" "}
                   <span className="text-[#FF8C00] font-bold">
-                    {balance} LST
+                    {balance} stCORE
                   </span>
                 </p>
                 <p className="text-sm text-gray-400">
-                  Need LST to delegate? Get 10 LST for testing
+                  Need stCORE to delegate? Get 10 stCORE for testing
                 </p>
               </div>
               
               <button
-                onClick={handleLstMint}
-                disabled={lstLoading}
+                onClick={handlestCOREMint}
+                disabled={stCORELoading}
                 className={`px-6 py-3 rounded-md text-white font-medium transition-colors ${
-                  lstLoading ? "opacity-70" : ""
+                  stCORELoading ? "opacity-70" : ""
                 } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
               >
-                {lstLoading ? "Processing..." : "Mint 10 LST"}
+                {stCORELoading ? "Processing..." : "Mint 10 stCORE"}
               </button>
             </div>
           </div>
@@ -301,13 +301,13 @@ const RestakingScreen = () => {
           {/* Balance Display */}
           <div className="mb-6 p-4 bg-gray-900 bg-opacity-50 rounded-lg">
             <div className="flex justify-between items-center mb-3">
-              <span className="text-gray-400">Your LST Balance</span>
-              <span className="text-xl font-semibold">{balance} LST</span>
+              <span className="text-gray-400">Your stCORE Balance</span>
+              <span className="text-xl font-semibold">{balance} stCORE</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-gray-400">Delegated LST</span>
+              <span className="text-gray-400">Delegated stCORE</span>
               <span className="text-xl font-semibold">
-                {delegatedAmount} LST
+                {delegatedAmount} stCORE
               </span>
             </div>
           </div>
@@ -368,7 +368,7 @@ const RestakingScreen = () => {
             protocols simultaneously.
           </p>
           <p className="text-gray-300">
-            When you delegate your LST tokens to an operator, they can use your
+            When you delegate your stCORE tokens to an operator, they can use your
             stake to validate transactions across different networks, increasing
             your potential rewards.
           </p>

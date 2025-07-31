@@ -7,28 +7,28 @@ import { parseUnits, formatUnits } from "viem";
 import StablecoinAnimation from "./components/StablecoinAnimation";
 import Link from "next/link";
 import Image from "next/image";
-import USDCJson from "@/contracts/USDC.sol/USDC.json";
+import USBDJson from "@/contracts/USBD/USBD.json";
 import PUSDJson from "@/contracts/PUSD.sol/PUSD.json";
-import LSTJson from "@/contracts/LST.sol/LST.json";
+import stCOREJson from "@/contracts/stCORE/stCORE.json";
 import EigenJson from "@/contracts/Eigen.sol/Eigen.json";
 import ContractAddresses from "../deployed-address.json";
 
 const HomePage = () => {
   const [selectedStep, setSelectedStep] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
-  const [usdcBalance, setUsdcBalance] = useState("0");
+  const [USBDBalance, setUSBDBalance] = useState("0");
   const [pusdBalance, setPusdBalance] = useState("0");
   const [loading, setLoading] = useState(false);
-  const [usdcLoading, setUsdcLoading] = useState(false);
+  const [USBDLoading, setUSBDLoading] = useState(false);
   const [error, setError] = useState("");
-  const [usdcError, setUsdcError] = useState("");
+  const [USBDError, setUSBDError] = useState("");
   const [success, setSuccess] = useState("");
-  const [usdcSuccess, setUsdcSuccess] = useState("");
+  const [USBDSuccess, setUSBDSuccess] = useState("");
 
   // Restaking states
-  const [lstBalance, setLstBalance] = useState("0");
-  const [lstAmount, setLstAmount] = useState("");
-  const [lstLoading, setLstLoading] = useState(false);
+  const [stCOREBalance, setstCOREBalance] = useState("0");
+  const [stCOREAmount, setstCOREAmount] = useState("");
+  const [stCORELoading, setstCORELoading] = useState(false);
   const [restakingLoading, setRestakingLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("delegate");
   const [delegatedAmount, setDelegatedAmount] = useState("0");
@@ -43,13 +43,13 @@ const HomePage = () => {
   const { data: walletClient } = useWalletClient();
 
   const devnetAddresses = {
-    USDC: "0x0230Af50C53eC0f30c7a4C85E4eE6e6165Afb45C",
-    LST: "0x806fB8DbAF32176bE869FCa871dAdfa8d85cA4C5",
-    PUSD: "0xfb14DF2d11888016ccDB4577f5e4b719523299b7",
-    sPUSD: "0xe456cB1B47256331CcBa625C000ff639dC5a8349",
-    Operator: "0x2Ab98Ca74DC10853F5702345a709e2ad0D1727C9",
-    Eigen: "0x54d447731BC149381ab6DD94A35DCe70Ba0ea1Bc",
-    LoanManager: "0x889F3dD9e729168b9162CCDFa6Aa7A9F6cE0a087",
+    USBD: "0x9155497EAE31D432C0b13dBCc0615a37f55a2c87",
+    stCORE: "0xfB12F7170FF298CDed84C793dAb9aBBEcc01E798",
+    PUSD: "0xc1EeD9232A0A44c2463ACB83698c162966FBc78d",
+    sPUSD: "0xC220Ed128102d888af857d137a54b9B7573A41b2",
+    Operator: "0xfaE849108F2A63Abe3BaB17E21Be077d07e7a9A2",
+    Eigen: "0xce830DA8667097BB491A70da268b76a081211814",
+    LoanManager: "0xD5bFeBDce5c91413E41cc7B24C8402c59A344f7c"
   };
   // above footer, show a table with devnet address from devnetAddresses
   const router = useRouter();
@@ -59,15 +59,15 @@ const HomePage = () => {
     if (!address || !publicClient) return;
 
     try {
-      // Fetch USDC balance
-      const usdcBalanceData = await publicClient.readContract({
-        address: ContractAddresses.USDC as `0x${string}`,
-        abi: USDCJson.abi,
+      // Fetch USBD balance
+      const USBDBalanceData = await publicClient.readContract({
+        address: ContractAddresses.USBD as `0x${string}`,
+        abi: USBDJson.abi,
         functionName: "balanceOf",
         args: [address],
       });
 
-      setUsdcBalance(formatUnits(usdcBalanceData as bigint, 18)); // USDC has 18 decimals
+      setUSBDBalance(formatUnits(USBDBalanceData as bigint, 18)); // USBD has 18 decimals
 
       // Fetch PUSD balance
       const pusdBalanceData = await publicClient.readContract({
@@ -99,27 +99,27 @@ const HomePage = () => {
     }
   };
 
-  // Handle USDC mint (fixed amount of 10 USDC)
-  const handleUsdcMint = async () => {
+  // Handle USBD mint (fixed amount of 10 USBD)
+  const handleUSBDMint = async () => {
     if (!walletClient || !publicClient) {
-      setUsdcError("Wallet not connected properly");
+      setUSBDError("Wallet not connected properly");
       return;
     }
 
-    setUsdcLoading(true);
-    setUsdcError("");
-    setUsdcSuccess("");
+    setUSBDLoading(true);
+    setUSBDError("");
+    setUSBDSuccess("");
 
     try {
-      // Convert 10 USDC to units (18 decimals)
-      const usdcAmountUnits = parseUnits("10", 18);
+      // Convert 10 USBD to units (18 decimals)
+      const USBDAmountUnits = parseUnits("10", 18);
 
       // Prepare the mint transaction
       const { request } = await publicClient.simulateContract({
-        address: ContractAddresses.USDC as `0x${string}`,
-        abi: USDCJson.abi,
+        address: ContractAddresses.USBD as `0x${string}`,
+        abi: USBDJson.abi,
         functionName: "mint",
-        args: [usdcAmountUnits],
+        args: [USBDAmountUnits],
         account: address,
       });
 
@@ -131,16 +131,16 @@ const HomePage = () => {
 
       // Update balance
       fetchBalances();
-      setUsdcSuccess("Successfully minted 10 USDC!");
+      setUSBDSuccess("Successfully minted 10 USBD!");
     } catch (err: unknown) {
-      console.error("Error minting USDC:", err);
-      setUsdcError(
+      console.error("Error minting USBD:", err);
+      setUSBDError(
         err instanceof Error
           ? err.message
-          : "Failed to mint USDC. Please try again."
+          : "Failed to mint USBD. Please try again."
       );
     } finally {
-      setUsdcLoading(false);
+      setUSBDLoading(false);
     }
   };
 
@@ -161,22 +161,22 @@ const HomePage = () => {
     setSuccess("");
 
     try {
-      // First approve USDC spending
-      const usdcAmount = parseUnits(amount, 18); // USDC has 18 decimals
+      // First approve USBD spending
+      const USBDAmount = parseUnits(amount, 18); // USBD has 18 decimals
 
-      // Check if we have enough USDC
-      if (parseFloat(usdcBalance) < parseFloat(amount)) {
-        setError(`Insufficient USDC balance. You have ${usdcBalance} USDC.`);
+      // Check if we have enough USBD
+      if (parseFloat(USBDBalance) < parseFloat(amount)) {
+        setError(`Insufficient USBD balance. You have ${USBDBalance} USBD.`);
         setLoading(false);
         return;
       }
 
-      // Approve USDC
+      // Approve USBD
       const { request: approveRequest } = await publicClient.simulateContract({
-        address: ContractAddresses.USDC as `0x${string}`,
-        abi: USDCJson.abi,
+        address: ContractAddresses.USBD as `0x${string}`,
+        abi: USBDJson.abi,
         functionName: "approve",
-        args: [ContractAddresses.PUSD as `0x${string}`, usdcAmount],
+        args: [ContractAddresses.PUSD as `0x${string}`, USBDAmount],
         account: address,
       });
 
@@ -188,7 +188,7 @@ const HomePage = () => {
         address: ContractAddresses.PUSD as `0x${string}`,
         abi: PUSDJson.abi,
         functionName: "depositAndMint",
-        args: [usdcAmount],
+        args: [USBDAmount],
         account: address,
       });
 
@@ -212,19 +212,19 @@ const HomePage = () => {
   };
 
   // Restaking functions
-  // Fetch LST balance and delegated amount
-  const fetchLstBalance = async () => {
+  // Fetch stCORE balance and delegated amount
+  const fetchstCOREBalance = async () => {
     if (!address || !publicClient) return;
 
     try {
       const balanceData = await publicClient.readContract({
-        address: ContractAddresses.LST as `0x${string}`,
-        abi: LSTJson.abi,
+        address: ContractAddresses.stCORE as `0x${string}`,
+        abi: stCOREJson.abi,
         functionName: "balanceOf",
         args: [address],
       });
 
-      setLstBalance(formatUnits(balanceData as bigint, 18));
+      setstCOREBalance(formatUnits(balanceData as bigint, 18));
 
       // Also fetch delegated amount
       try {
@@ -241,32 +241,32 @@ const HomePage = () => {
         // If this fails, we'll just show 0 delegated
       }
     } catch (err) {
-      console.error("Error fetching LST balance:", err);
+      console.error("Error fetching stCORE balance:", err);
     }
   };
 
-  // Fetch LST balance on mount and when address changes
+  // Fetch stCORE balance on mount and when address changes
   useEffect(() => {
     if (isConnected && address && publicClient) {
-      fetchLstBalance();
+      fetchstCOREBalance();
     }
   }, [address, isConnected, publicClient]);
 
-  // Handle LST amount input change
-  const handleLstAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle stCORE amount input change
+  const handlestCOREAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
-      setLstAmount(value);
+      setstCOREAmount(value);
     }
   };
 
   // Handle max button click for restaking
-  const handleLstMaxClick = () => {
+  const handlestCOREMaxClick = () => {
     if (activeTab === "delegate") {
-      setLstAmount(lstBalance);
+      setstCOREAmount(stCOREBalance);
     } else {
-      setLstAmount(delegatedAmount);
+      setstCOREAmount(delegatedAmount);
     }
   };
 
@@ -278,24 +278,24 @@ const HomePage = () => {
     }, 5000);
   };
 
-  // Handle LST mint (fixed amount of 10 LST)
-  const handleLstMint = async () => {
+  // Handle stCORE mint (fixed amount of 10 stCORE)
+  const handlestCOREMint = async () => {
     if (!walletClient || !publicClient) {
       showRestakingNotification("Wallet not connected properly", "error");
       return;
     }
 
-    setLstLoading(true);
+    setstCORELoading(true);
     try {
-      // Convert 10 LST to units (18 decimals)
-      const lstAmountUnits = parseUnits("10", 18);
+      // Convert 10 stCORE to units (18 decimals)
+      const stCOREAmountUnits = parseUnits("10", 18);
 
       // Prepare the mint transaction
       const { request } = await publicClient.simulateContract({
-        address: ContractAddresses.LST as `0x${string}`,
-        abi: LSTJson.abi,
+        address: ContractAddresses.stCORE as `0x${string}`,
+        abi: stCOREJson.abi,
         functionName: "mint",
-        args: [lstAmountUnits],
+        args: [stCOREAmountUnits],
         account: address,
       });
 
@@ -306,22 +306,22 @@ const HomePage = () => {
       await publicClient.waitForTransactionReceipt({ hash });
 
       // Update balance
-      fetchLstBalance();
-      showRestakingNotification("Successfully minted 10 LST!", "success");
+      fetchstCOREBalance();
+      showRestakingNotification("Successfully minted 10 stCORE!", "success");
     } catch (error: unknown) {
-      console.error("Error minting LST:", error);
+      console.error("Error minting stCORE:", error);
       showRestakingNotification(
-        error instanceof Error ? error.message : "Failed to mint LST. Please try again.",
+        error instanceof Error ? error.message : "Failed to mint stCORE. Please try again.",
         "error"
       );
     } finally {
-      setLstLoading(false);
+      setstCORELoading(false);
     }
   };
 
   // Handle delegate action (addDelegation)
   const handleDelegate = async () => {
-    if (!lstAmount || parseFloat(lstAmount) <= 0) {
+    if (!stCOREAmount || parseFloat(stCOREAmount) <= 0) {
       showRestakingNotification("Please enter a valid amount", "error");
       return;
     }
@@ -337,7 +337,7 @@ const HomePage = () => {
         address: ContractAddresses.Eigen as `0x${string}`,
         abi: EigenJson.abi,
         functionName: "addDelegation",
-        args: [parseUnits(lstAmount, 18)],
+        args: [parseUnits(stCOREAmount, 18)],
         account: address,
       });
 
@@ -345,10 +345,10 @@ const HomePage = () => {
       await publicClient.waitForTransactionReceipt({ hash });
 
       // Update balance
-      fetchLstBalance();
+      fetchstCOREBalance();
 
-      showRestakingNotification(`Successfully delegated ${lstAmount} LST`, "success");
-      setLstAmount("");
+      showRestakingNotification(`Successfully delegated ${stCOREAmount} stCORE`, "success");
+      setstCOREAmount("");
     } catch (error: unknown) {
       console.error("Delegation error:", error);
       showRestakingNotification(
@@ -362,7 +362,7 @@ const HomePage = () => {
 
   // Handle undelegate action (removeDelegation)
   const handleUndelegate = async () => {
-    if (!lstAmount || parseFloat(lstAmount) <= 0) {
+    if (!stCOREAmount || parseFloat(stCOREAmount) <= 0) {
       showRestakingNotification("Please enter a valid amount", "error");
       return;
     }
@@ -379,7 +379,7 @@ const HomePage = () => {
         address: ContractAddresses.Eigen as `0x${string}`,
         abi: EigenJson.abi,
         functionName: "removeDelegation",
-        args: [parseUnits(lstAmount, 18)],
+        args: [parseUnits(stCOREAmount, 18)],
         account: address,
       });
 
@@ -387,10 +387,10 @@ const HomePage = () => {
       await publicClient.waitForTransactionReceipt({ hash });
 
       // Update balance
-      fetchLstBalance();
+      fetchstCOREBalance();
 
-      showRestakingNotification(`Successfully undelegated ${lstAmount} LST`, "success");
-      setLstAmount("");
+      showRestakingNotification(`Successfully undelegated ${stCOREAmount} stCORE`, "success");
+      setstCOREAmount("");
     } catch (error: unknown) {
       console.error("Undelegation error:", error);
       showRestakingNotification(
@@ -469,13 +469,13 @@ const HomePage = () => {
                 <li className="flex items-start">
                   <span className="text-[#FF8C00] mr-2">1.</span>
                   <span>
-                    Users deposit LST tokens as collateral into the protocol
+                    Users deposit stCORE tokens as collateral into the protocol
                   </span>
                 </li>
                 <li className="flex items-start">
                   <span className="text-[#FF8C00] mr-2">2.</span>
                   <span>
-                    LST tokens are delegated to verified operators for restaking
+                    stCORE tokens are delegated to verified operators for restaking
                   </span>
                 </li>
                 <li className="flex items-start">
@@ -556,7 +556,7 @@ const HomePage = () => {
                         MINT
                       </h3>
                       <p className="text-[#FF8C00] text-lg font-medium leading-relaxed">
-                        Mint USDC and get PUSD stablecoins in return.
+                        Mint USBD and get PUSD stablecoins in return.
                       </p>
                     </div>
                   </div>
@@ -593,7 +593,7 @@ const HomePage = () => {
                         RESTAKING
                       </h3>
                       <p className="text-[#FF8C00] text-lg font-medium leading-relaxed">
-                        Mint LST and delegate or undelegate to operators.
+                        Mint stCORE and delegate or undelegate to operators.
                       </p>
                     </div>
                   </div>
@@ -634,39 +634,39 @@ const HomePage = () => {
                     </div>
                   ) : (
                     <>
-                      {/* USDC Mint Button */}
+                      {/* USBD Mint Button */}
                       <div className="mb-6">
                         <div className="bg-black border border-gray-800 p-4 rounded-lg">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-gray-300 mb-1">
-                                Your USDC Balance:{" "}
+                                Your USBD Balance:{" "}
                                 <span className="text-[#FF8C00] font-bold">
-                                  {usdcBalance} USDC
+                                  {USBDBalance} USBD
                                 </span>
                               </p>
                               <p className="text-sm text-gray-400">
-                                Need USDC to mint PUSD? Get 10 USDC for testing
+                                Need USBD to mint PUSD? Get 10 USBD for testing
                               </p>
                             </div>
                             
                             <button
-                              onClick={handleUsdcMint}
-                              disabled={usdcLoading}
+                              onClick={handleUSBDMint}
+                              disabled={USBDLoading}
                               className={`px-4 py-2 rounded-md text-white font-medium transition-colors ${
-                                usdcLoading ? "opacity-70" : ""
+                                USBDLoading ? "opacity-70" : ""
                               } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
                             >
-                              {usdcLoading ? "Processing..." : "Mint 10 USDC"}
+                              {USBDLoading ? "Processing..." : "Mint 10 USBD"}
                             </button>
                           </div>
 
-                          {usdcError && (
-                            <p className="mt-2 text-red-400 text-sm">Error: {usdcError}</p>
+                          {USBDError && (
+                            <p className="mt-2 text-red-400 text-sm">Error: {USBDError}</p>
                           )}
 
-                          {usdcSuccess && (
-                            <p className="mt-2 text-green-400 text-sm">{usdcSuccess}</p>
+                          {USBDSuccess && (
+                            <p className="mt-2 text-green-400 text-sm">{USBDSuccess}</p>
                           )}
                         </div>
                       </div>
@@ -679,9 +679,9 @@ const HomePage = () => {
                         
                         <div className="mb-4">
                           <p className="text-gray-300 mb-2">
-                            Your USDC Balance:{" "}
+                            Your USBD Balance:{" "}
                             <span className="text-[#FF8C00] font-bold">
-                              {usdcBalance} USDC
+                              {USBDBalance} USBD
                             </span>
                           </p>
                           <p className="text-gray-300 mb-4">
@@ -711,7 +711,7 @@ const HomePage = () => {
                                 disabled={loading}
                               />
                               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                <span className="text-gray-400">USDC</span>
+                                <span className="text-gray-400">USBD</span>
                               </div>
                             </div>
                           </div>
@@ -758,10 +758,10 @@ const HomePage = () => {
                           About PUSD
                         </h3>
                         <p className="text-gray-300 mb-2">
-                          PUSD is a yield-bearing stablecoin backed by USDC collateral.
+                          PUSD is a yield-bearing stablecoin backed by USBD collateral.
                         </p>
                         <p className="text-gray-300">
-                          When you mint PUSD, your USDC is deposited into the protocol and
+                          When you mint PUSD, your USBD is deposited into the protocol and
                           used to generate yield through secure lending markets.
                         </p>
                       </div>
@@ -797,30 +797,30 @@ const HomePage = () => {
                     </div>
                   ) : (
                     <>
-                      {/* LST Mint Button */}
+                      {/* stCORE Mint Button */}
                       <div className="mb-6">
                         <div className="bg-black border border-gray-800 p-4 rounded-lg">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-gray-300 mb-1">
-                                Your LST Balance:{" "}
+                                Your stCORE Balance:{" "}
                                 <span className="text-[#FF8C00] font-bold">
-                                  {lstBalance} LST
+                                  {stCOREBalance} stCORE
                                 </span>
                               </p>
                               <p className="text-sm text-gray-400">
-                                Need LST to delegate? Get 10 LST for testing
+                                Need stCORE to delegate? Get 10 stCORE for testing
                               </p>
                             </div>
                             
                             <button
-                              onClick={handleLstMint}
-                              disabled={lstLoading}
+                              onClick={handlestCOREMint}
+                              disabled={stCORELoading}
                               className={`px-4 py-2 rounded-md text-white font-medium transition-colors ${
-                                lstLoading ? "opacity-70" : ""
+                                stCORELoading ? "opacity-70" : ""
                               } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
                             >
-                              {lstLoading ? "Processing..." : "Mint 10 LST"}
+                              {stCORELoading ? "Processing..." : "Mint 10 stCORE"}
                             </button>
                           </div>
                         </div>
@@ -855,13 +855,13 @@ const HomePage = () => {
                         {/* Balance Display */}
                         <div className="mb-4 p-3 bg-gray-900 bg-opacity-50 rounded-lg">
                           <div className="flex justify-between items-center mb-2">
-                            <span className="text-gray-400 text-sm">Your LST Balance</span>
-                            <span className="text-lg font-semibold">{lstBalance} LST</span>
+                            <span className="text-gray-400 text-sm">Your stCORE Balance</span>
+                            <span className="text-lg font-semibold">{stCOREBalance} stCORE</span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-gray-400 text-sm">Delegated LST</span>
+                            <span className="text-gray-400 text-sm">Delegated stCORE</span>
                             <span className="text-lg font-semibold">
-                              {delegatedAmount} LST
+                              {delegatedAmount} stCORE
                             </span>
                           </div>
                         </div>
@@ -876,14 +876,14 @@ const HomePage = () => {
                           <div className="relative">
                             <input
                               type="text"
-                              value={lstAmount}
-                              onChange={handleLstAmountChange}
+                              value={stCOREAmount}
+                              onChange={handlestCOREAmountChange}
                               placeholder="0.00"
                               className="w-full px-3 py-2 bg-gray-800 bg-opacity-50 border border-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C00]"
                               disabled={restakingLoading}
                             />
                             <button
-                              onClick={handleLstMaxClick}
+                              onClick={handlestCOREMaxClick}
                               className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs bg-gray-700 px-2 py-1 rounded text-gray-300 hover:bg-gray-600"
                             >
                               MAX
@@ -922,7 +922,7 @@ const HomePage = () => {
                           protocols simultaneously.
                         </p>
                         <p className="text-gray-300 text-sm">
-                          When you delegate your LST tokens to an operator, they can use your
+                          When you delegate your stCORE tokens to an operator, they can use your
                           stake to validate transactions across different networks, increasing
                           your potential rewards.
                         </p>

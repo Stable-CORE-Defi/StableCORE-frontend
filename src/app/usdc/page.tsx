@@ -4,10 +4,10 @@ import React, { useState, useEffect } from "react";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 
-import USDCJson from "@/contracts/USDC.sol/USDC.json";
+import USBDJson from "@/contracts/USBD/USBD.json";
 import ContractAddresses from "../../deployed-address.json";
 
-const USDCMint = () => {
+const USBDMint = () => {
   const [amount, setAmount] = useState("");
   const [balance, setBalance] = useState("0");
   const [loading, setLoading] = useState(false);
@@ -24,13 +24,13 @@ const USDCMint = () => {
 
     try {
       const balanceData = await publicClient.readContract({
-        address: ContractAddresses.USDC as `0x${string}`,
-        abi: USDCJson.abi,
+        address: ContractAddresses.USBD as `0x${string}`,
+        abi: USBDJson.abi,
         functionName: "balanceOf",
         args: [address],
       });
 
-      setBalance(formatUnits(balanceData as bigint, 18)); // USDC has 18 decimals
+      setBalance(formatUnits(balanceData as bigint, 18)); // USBD has 18 decimals
     } catch (err) {
       console.error("Error fetching balance:", err);
     }
@@ -71,15 +71,15 @@ const USDCMint = () => {
     setSuccess("");
 
     try {
-      // Convert ETH amount to USDC units (18 decimals)
-      const usdcAmount = parseUnits(amount, 18);
+      // Convert ETH amount to USBD units (18 decimals)
+      const USBDAmount = parseUnits(amount, 18);
 
       // Prepare the mint transaction
       const { request } = await publicClient.simulateContract({
-        address: ContractAddresses.USDC as `0x${string}`,
-        abi: USDCJson.abi,
+        address: ContractAddresses.USBD as `0x${string}`,
+        abi: USBDJson.abi,
         functionName: "mint",
-        args: [usdcAmount],
+        args: [USBDAmount],
         account: address,
       });
 
@@ -92,13 +92,13 @@ const USDCMint = () => {
       // Update balance and reset form
       fetchBalance();
       setAmount("");
-      setSuccess(`Successfully minted ${amount} USDC!`);
+      setSuccess(`Successfully minted ${amount} USBD!`);
     } catch (err: unknown) {
-      console.error("Error minting USDC:", err);
+      console.error("Error minting USBD:", err);
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to mint USDC. Please try again."
+          : "Failed to mint USBD. Please try again."
       );
     } finally {
       setLoading(false);
@@ -117,13 +117,13 @@ const USDCMint = () => {
             fontFamily: "monospace",
           }}
         >
-          USDC MINTER
+          USBD MINTER
         </h1>
 
         {!isConnected ? (
           <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg mb-6 backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
             <p className="text-center text-gray-300">
-              Please connect your wallet to mint USDC
+              Please connect your wallet to mint USBD
             </p>
           </div>
         ) : (
@@ -131,9 +131,9 @@ const USDCMint = () => {
             <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg mb-6 backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
               <div className="mb-4">
                 <p className="text-gray-300 mb-2">
-                  Your USDC Balance:{" "}
+                  Your USBD Balance:{" "}
                   <span className="text-[#FF8C00] font-bold">
-                    {balance} USDC
+                    {balance} USBD
                   </span>
                 </p>
               </div>
@@ -163,7 +163,7 @@ const USDCMint = () => {
                   loading ? "opacity-70" : ""
                 } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
               >
-                {loading ? "Processing..." : "Mint USDC"}
+                {loading ? "Processing..." : "Mint USBD"}
               </button>
 
               {error && (
@@ -177,14 +177,14 @@ const USDCMint = () => {
 
             <div className="bg-black border border-gray-800 p-4 rounded-lg">
               <h2 className="text-lg font-semibold mb-2 text-[#FF8C00]">
-                About USDC Minting
+                About USBD Minting
               </h2>
               <p className="text-gray-300 mb-2">
-                This is a testnet version of USDC that you can mint freely for
+                This is a testnet version of USBD that you can mint freely for
                 testing purposes.
               </p>
               <p className="text-gray-300">
-                In production, USDC is a fully-collateralized US dollar
+                In production, USBD is a fully-collateralized US dollar
                 stablecoin issued by Circle.
               </p>
             </div>
@@ -195,4 +195,4 @@ const USDCMint = () => {
   );
 };
 
-export default USDCMint;
+export default USBDMint;
