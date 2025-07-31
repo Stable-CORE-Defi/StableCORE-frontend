@@ -78,7 +78,7 @@ const StablecoinAnimation = () => {
       ctx.clearRect(0, 0, dimensions.width, dimensions.height);
       
       // Draw background
-      ctx.filstCOREyle = 'black';
+      ctx.fillStyle = 'black';
       ctx.fillRect(0, 0, dimensions.width, dimensions.height);
       
       // Draw grid pattern
@@ -118,7 +118,7 @@ const StablecoinAnimation = () => {
         // Draw particle
         ctx.beginPath();
         ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-        ctx.filstCOREyle = particle.color === '#FF8C00' 
+        ctx.fillStyle = particle.color === '#FF8C00' 
           ? `rgba(255, 140, 0, ${particle.opacity})` 
           : `rgba(255, 255, 255, ${particle.opacity * 0.5})`;
         ctx.fill();
@@ -165,12 +165,12 @@ const StablecoinAnimation = () => {
       // Draw inner circle
       ctx.beginPath();
       ctx.arc(centerX, centerY, 70, 0, Math.PI * 2);
-      ctx.filstCOREyle = 'rgba(255, 140, 0, 0.1)';
+      ctx.fillStyle = 'rgba(255, 140, 0, 0.1)';
       ctx.fill();
       
       // Draw dollar symbol
       ctx.font = 'bold 60px Arial';
-      ctx.filstCOREyle = '#FF8C00';
+      ctx.fillStyle = '#FF8C00';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('$', centerX, centerY);
@@ -187,7 +187,7 @@ const StablecoinAnimation = () => {
       
       ctx.beginPath();
       ctx.arc(centerX, centerY, glowSize, 0, Math.PI * 2);
-      ctx.filstCOREyle = gradient;
+      ctx.fillStyle = gradient;
       ctx.fill();
       
       // Draw data points around the circle
@@ -210,14 +210,14 @@ const StablecoinAnimation = () => {
         // Draw data point
         ctx.beginPath();
         ctx.arc(x, y, 4, 0, Math.PI * 2);
-        ctx.filstCOREyle = '#FF8C00';
+        ctx.fillStyle = '#FF8C00';
         ctx.fill();
       }
       
       // Draw text labels
       const labels = ['SECURE', 'STABLE', 'VERIFIED', 'BACKED'];
       ctx.font = 'bold 14px Arial';
-      ctx.filstCOREyle = 'white';
+      ctx.fillStyle = 'white';
       
       labels.forEach((label, i) => {
         const angle = (i / labels.length) * Math.PI * 2;
@@ -251,7 +251,7 @@ const StablecoinAnimation = () => {
       
       ctx.beginPath();
       ctx.arc(earthX, earthY, earthRadius, 0, Math.PI * 2);
-      ctx.filstCOREyle = earthGradient;
+      ctx.fillStyle = earthGradient;
       ctx.fill();
       
       // Draw Earth glow
@@ -264,11 +264,11 @@ const StablecoinAnimation = () => {
       
       ctx.beginPath();
       ctx.arc(earthX, earthY, earthRadius + 10, 0, Math.PI * 2);
-      ctx.filstCOREyle = earthGlowGradient;
+      ctx.fillStyle = earthGlowGradient;
       ctx.fill();
       
       // Draw continents (simplified)
-      ctx.filstCOREyle = 'rgba(34, 139, 34, 0.7)'; // ForestGreen
+      ctx.fillStyle = 'rgba(34, 139, 34, 0.7)'; // ForestGreen
       
       // Draw a few random "continent" shapes
       for (let i = 0; i < 5; i++) {
@@ -307,7 +307,7 @@ const StablecoinAnimation = () => {
       
       ctx.beginPath();
       ctx.arc(satelliteX, satelliteY, 3, 0, Math.PI * 2);
-      ctx.filstCOREyle = '#FF8C00';
+      ctx.fillStyle = '#FF8C00';
       ctx.fill();
       
       setParticles(updatedParticles);
