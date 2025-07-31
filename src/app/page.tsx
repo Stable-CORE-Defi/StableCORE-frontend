@@ -8,7 +8,7 @@ import StablecoinAnimation from "./components/StablecoinAnimation";
 import Link from "next/link";
 import Image from "next/image";
 import USBDJson from "@/contracts/USBD/USBD.json";
-import PUSDJson from "@/contracts/PUSD.sol/PUSD.json";
+import CUSDJson from "@/contracts/CUSD.sol/CUSD.json";
 import stCOREJson from "@/contracts/stCORE/stCORE.json";
 import EigenJson from "@/contracts/Eigen.sol/Eigen.json";
 import ContractAddresses from "../deployed-address.json";
@@ -17,7 +17,7 @@ const HomePage = () => {
   const [selectedStep, setSelectedStep] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
   const [USBDBalance, setUSBDBalance] = useState("0");
-  const [pusdBalance, setPusdBalance] = useState("0");
+  const [CUSDBalance, setCUSDBalance] = useState("0");
   const [loading, setLoading] = useState(false);
   const [USBDLoading, setUSBDLoading] = useState(false);
   const [error, setError] = useState("");
@@ -45,8 +45,8 @@ const HomePage = () => {
   const devnetAddresses = {
     USBD: "0x9155497EAE31D432C0b13dBCc0615a37f55a2c87",
     stCORE: "0xfB12F7170FF298CDed84C793dAb9aBBEcc01E798",
-    PUSD: "0xc1EeD9232A0A44c2463ACB83698c162966FBc78d",
-    sPUSD: "0xC220Ed128102d888af857d137a54b9B7573A41b2",
+    CUSD: "0xc1EeD9232A0A44c2463ACB83698c162966FBc78d",
+    sCUSD: "0xC220Ed128102d888af857d137a54b9B7573A41b2",
     Operator: "0xfaE849108F2A63Abe3BaB17E21Be077d07e7a9A2",
     Eigen: "0xce830DA8667097BB491A70da268b76a081211814",
     LoanManager: "0xD5bFeBDce5c91413E41cc7B24C8402c59A344f7c"
@@ -69,15 +69,15 @@ const HomePage = () => {
 
       setUSBDBalance(formatUnits(USBDBalanceData as bigint, 18)); // USBD has 18 decimals
 
-      // Fetch PUSD balance
-      const pusdBalanceData = await publicClient.readContract({
-        address: ContractAddresses.PUSD as `0x${string}`,
-        abi: PUSDJson.abi,
+      // Fetch CUSD balance
+      const CUSDBalanceData = await publicClient.readContract({
+        address: ContractAddresses.CUSD as `0x${string}`,
+        abi: CUSDJson.abi,
         functionName: "balanceOf",
         args: [address],
       });
 
-      setPusdBalance(formatUnits(pusdBalanceData as bigint, 18)); // PUSD has 18 decimals
+      setCUSDBalance(formatUnits(CUSDBalanceData as bigint, 18)); // CUSD has 18 decimals
     } catch (err) {
       console.error("Error fetching balances:", err);
     }
@@ -90,7 +90,7 @@ const HomePage = () => {
     }
   }, [address, isConnected, publicClient]);
 
-  // Handle input change for PUSD
+  // Handle input change for CUSD
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Only allow numbers and decimals
@@ -144,7 +144,7 @@ const HomePage = () => {
     }
   };
 
-  // Handle approve and mint PUSD
+  // Handle approve and mint CUSD
   const handleMint = async () => {
     if (!amount || parseFloat(amount) <= 0) {
       setError("Please enter a valid amount");
@@ -176,17 +176,17 @@ const HomePage = () => {
         address: ContractAddresses.USBD as `0x${string}`,
         abi: USBDJson.abi,
         functionName: "approve",
-        args: [ContractAddresses.PUSD as `0x${string}`, USBDAmount],
+        args: [ContractAddresses.CUSD as `0x${string}`, USBDAmount],
         account: address,
       });
 
       const approveHash = await walletClient.writeContract(approveRequest);
       await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
-      // Now call depositAndMint on PUSD contract
+      // Now call depositAndMint on CUSD contract
       const { request: mintRequest } = await publicClient.simulateContract({
-        address: ContractAddresses.PUSD as `0x${string}`,
-        abi: PUSDJson.abi,
+        address: ContractAddresses.CUSD as `0x${string}`,
+        abi: CUSDJson.abi,
         functionName: "depositAndMint",
         args: [USBDAmount],
         account: address,
@@ -198,13 +198,13 @@ const HomePage = () => {
       // Update balances and reset form
       fetchBalances();
       setAmount("");
-      setSuccess(`Successfully minted PUSD!`);
+      setSuccess(`Successfully minted CUSD!`);
     } catch (err: unknown) {
-      console.error("Error minting PUSD:", err);
+      console.error("Error minting CUSD:", err);
       const errorMessage =
         err instanceof Error
           ? err.message
-          : "Failed to mint PUSD. Please try again.";
+          : "Failed to mint CUSD. Please try again.";
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -495,13 +495,13 @@ const HomePage = () => {
                 <li className="flex items-start">
                   <span className="text-[#FF8C00] mr-2">4.</span>
                   <span>
-                    Users receive PUSD stablecoins against their collateral
+                    Users receive CUSD stablecoins against their collateral
                   </span>
                 </li>
                 <li className="flex items-start">
                   <span className="text-[#FF8C00] mr-2">5.</span>
                   <span>
-                    PUSD can be deposited into sPUSD vault for yield generation
+                    CUSD can be deposited into sCUSD vault for yield generation
                   </span>
                 </li>
                 <li className="flex items-start">
@@ -556,12 +556,12 @@ const HomePage = () => {
                         MINT
                       </h3>
                       <p className="text-[#FF8C00] text-lg font-medium leading-relaxed">
-                        Mint USBD and get PUSD stablecoins in return.
+                        Mint USBD and get CUSD stablecoins in return.
                       </p>
                     </div>
                   </div>
 
-                  {/* Step 2 - PUSD */}
+                  {/* Step 2 - CUSD */}
                   <div className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative">
                     <div className="flex-shrink-0 relative z-10">
                       <div className="w-16 h-16 rounded-lg border-2 border-gray-600 hover:border-[#FF8C00] transition-colors duration-300 flex items-center justify-center bg-black group-hover:bg-[#FF8C00] group-hover:text-black">
@@ -570,10 +570,10 @@ const HomePage = () => {
                     </div>
                     <div className="flex-grow">
                       <h3 className="text-3xl font-bold text-white mb-3 group-hover:text-[#FF8C00] transition-colors">
-                        PUSD
+                        CUSD
                       </h3>
                       <p className="text-[#FF8C00] text-lg font-medium leading-relaxed">
-                        PUSD can be converted to sPUSD for yield generation.
+                        CUSD can be converted to sCUSD for yield generation.
                       </p>
                     </div>
                   </div>
@@ -646,7 +646,7 @@ const HomePage = () => {
                                 </span>
                               </p>
                               <p className="text-sm text-gray-400">
-                                Need USBD to mint PUSD? Get 10 USBD for testing
+                                Need USBD to mint CUSD? Get 10 USBD for testing
                               </p>
                             </div>
                             
@@ -671,10 +671,10 @@ const HomePage = () => {
                         </div>
                       </div>
 
-                      {/* PUSD Mint Box */}
+                      {/* CUSD Mint Box */}
                       <div className="bg-black border border-gray-800 p-4 rounded-lg mb-4">
                         <h3 className="text-xl font-bold mb-4 text-[#FF8C00] font-mono">
-                          MINT PUSD
+                          MINT CUSD
                         </h3>
                         
                         <div className="mb-4">
@@ -685,9 +685,9 @@ const HomePage = () => {
                             </span>
                           </p>
                           <p className="text-gray-300 mb-4">
-                            Your PUSD Balance:{" "}
+                            Your CUSD Balance:{" "}
                             <span className="text-[#FF8C00] font-bold">
-                              {pusdBalance} PUSD
+                              {CUSDBalance} CUSD
                             </span>
                           </p>
                         </div>
@@ -728,7 +728,7 @@ const HomePage = () => {
                                 className="w-full px-3 py-2 bg-gray-800 bg-opacity-50 border border-gray-700 text-white rounded-md"
                               />
                               <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                <span className="text-gray-400">PUSD</span>
+                                <span className="text-gray-400">CUSD</span>
                               </div>
                             </div>
                           </div>
@@ -741,7 +741,7 @@ const HomePage = () => {
                             loading ? "opacity-70" : ""
                           } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
                         >
-                          {loading ? "Processing..." : "Mint PUSD"}
+                          {loading ? "Processing..." : "Mint CUSD"}
                         </button>
 
                         {error && (
@@ -755,13 +755,13 @@ const HomePage = () => {
 
                       <div className="bg-black border border-gray-800 p-4 rounded-lg">
                         <h3 className="text-lg font-semibold mb-2 text-[#FF8C00]">
-                          About PUSD
+                          About CUSD
                         </h3>
                         <p className="text-gray-300 mb-2">
-                          PUSD is a yield-bearing stablecoin backed by USBD collateral.
+                          CUSD is a yield-bearing stablecoin backed by USBD collateral.
                         </p>
                         <p className="text-gray-300">
-                          When you mint PUSD, your USBD is deposited into the protocol and
+                          When you mint CUSD, your USBD is deposited into the protocol and
                           used to generate yield through secure lending markets.
                         </p>
                       </div>

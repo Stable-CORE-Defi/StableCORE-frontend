@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
-import PUSDJson from "@/contracts/PUSD.sol/PUSD.json";
+import CUSDJson from "@/contracts/CUSD.sol/CUSD.json";
 import LoanManagerJson from "@/contracts/LoanManager.sol/LoanManager.json";
 import ContractAddresses from "../../deployed-address.json";
 import EigenJson from "@/contracts/Eigen.sol/Eigen.json";
@@ -116,8 +116,8 @@ export default function OperatorScreen() {
     try {
       // Fetch USBD balance
       const USBDBalanceData = await publicClient.readContract({
-        address: ContractAddresses.PUSD as `0x${string}`,
-        abi: PUSDJson.abi,
+        address: ContractAddresses.CUSD as `0x${string}`,
+        abi: CUSDJson.abi,
         functionName: "balanceOf",
         args: [address],
       });
@@ -209,8 +209,8 @@ export default function OperatorScreen() {
 
     try {
       const operatorBalanceData = await publicClient.readContract({
-        address: ContractAddresses.PUSD as `0x${string}`,
-        abi: PUSDJson.abi,
+        address: ContractAddresses.CUSD as `0x${string}`,
+        abi: CUSDJson.abi,
         functionName: "balanceOf",
         args: [ContractAddresses.Operator],
       });
@@ -367,12 +367,12 @@ export default function OperatorScreen() {
 
     setIsLoading(true);
     try {
-      // Call mintToOperator on PUSD contract
+      // Call mintToOperator on CUSD contract
       const { request } = await publicClient.simulateContract({
-        address: ContractAddresses.PUSD as `0x${string}`,
-        abi: PUSDJson.abi,
+        address: ContractAddresses.CUSD as `0x${string}`,
+        abi: CUSDJson.abi,
         functionName: "mintToOperator",
-        args: [parseUnits("10", 18)], // Mint 10 PUSD to operator
+        args: [parseUnits("10", 18)], // Mint 10 CUSD to operator
         account: address,
       });
 
@@ -383,11 +383,11 @@ export default function OperatorScreen() {
       fetchBalances();
       fetchOperatorBalance();
 
-      showNotification("Successfully minted PUSD to operator", "success");
+      showNotification("Successfully minted CUSD to operator", "success");
     } catch (error: unknown) {
-      console.error("Error minting PUSD:", error);
+      console.error("Error minting CUSD:", error);
       showNotification(
-        error instanceof Error ? error.message : "Failed to mint PUSD",
+        error instanceof Error ? error.message : "Failed to mint CUSD",
         "error"
       );
     } finally {
@@ -906,9 +906,9 @@ export default function OperatorScreen() {
                 <div>
                   <h2 className="text-2xl font-bold">Repay Loan</h2>
                   <p className="text-gray-400 mt-1">
-                    Operator PUSD Balance:{" "}
+                    Operator CUSD Balance:{" "}
                     <span className="text-white font-medium">
-                      {operatorBalance} PUSD
+                      {operatorBalance} CUSD
                     </span>
                   </p>
                 </div>
@@ -917,7 +917,7 @@ export default function OperatorScreen() {
                   disabled={isLoading}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  Mint PUSD
+                  Mint CUSD
                 </button>
               </div>
 
@@ -958,12 +958,12 @@ export default function OperatorScreen() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-gray-400">Principal</p>
-                        <p className="font-medium">{loanDetails.amount} PUSD</p>
+                        <p className="font-medium">{loanDetails.amount} CUSD</p>
                       </div>
                       <div>
                         <p className="text-gray-400">Interest Due</p>
                         <p className="font-medium">
-                          {Number(loanDetails.amount).toFixed(2)} PUSD
+                          {Number(loanDetails.amount).toFixed(2)} CUSD
                         </p>
                       </div>
                       <div>

@@ -1,7 +1,7 @@
 {
     "_format": "hh-sol-artifact-1",
-    "contractName": "PUSD",
-    "sourceName": "contracts/PUSD.sol",
+    "contractName": "CUSD",
+    "sourceName": "contracts/CUSD.sol",
     "abi": [
       {
         "inputs": [
@@ -165,7 +165,7 @@
           {
             "indexed": false,
             "internalType": "uint256",
-            "name": "pusdAmount",
+            "name": "CUSDAmount",
             "type": "uint256"
           }
         ],
@@ -184,7 +184,7 @@
           {
             "indexed": false,
             "internalType": "uint256",
-            "name": "pusdAmount",
+            "name": "CUSDAmount",
             "type": "uint256"
           }
         ],
@@ -247,7 +247,7 @@
           {
             "indexed": false,
             "internalType": "uint256",
-            "name": "pusdAmount",
+            "name": "CUSDAmount",
             "type": "uint256"
           },
           {
@@ -361,7 +361,7 @@
             "type": "address"
           }
         ],
-        "name": "getPUSDBalance",
+        "name": "getCUSDBalance",
         "outputs": [
           {
             "internalType": "uint256",
@@ -416,7 +416,7 @@
         "outputs": [
           {
             "internalType": "uint256",
-            "name": "pusdBalance",
+            "name": "CUSDBalance",
             "type": "uint256"
           },
           {
@@ -482,11 +482,11 @@
         "inputs": [
           {
             "internalType": "uint256",
-            "name": "pusdAmount",
+            "name": "CUSDAmount",
             "type": "uint256"
           }
         ],
-        "name": "mintPusdAndTransferToSPUSD",
+        "name": "mintCUSDAndTransferToSCUSD",
         "outputs": [
           {
             "internalType": "bool",
@@ -576,7 +576,7 @@
       },
       {
         "inputs": [],
-        "name": "sPUSDAddress",
+        "name": "sCUSDAddress",
         "outputs": [
           {
             "internalType": "address",
@@ -617,11 +617,11 @@
         "inputs": [
           {
             "internalType": "address",
-            "name": "_sPUSD",
+            "name": "_sCUSD",
             "type": "address"
           }
         ],
-        "name": "setsPUSDAddress",
+        "name": "setsCUSDAddress",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -709,7 +709,7 @@
         "inputs": [
           {
             "internalType": "uint256",
-            "name": "pusdAmount",
+            "name": "CUSDAmount",
             "type": "uint256"
           },
           {
@@ -750,11 +750,11 @@
           },
           {
             "internalType": "uint256",
-            "name": "pusdAmount",
+            "name": "CUSDAmount",
             "type": "uint256"
           }
         ],
-        "name": "transferToSPUSD",
+        "name": "transferToSCUSD",
         "outputs": [
           {
             "internalType": "bool",
@@ -782,7 +782,7 @@
         "inputs": [
           {
             "internalType": "uint256",
-            "name": "pusdAmount",
+            "name": "CUSDAmount",
             "type": "uint256"
           }
         ],

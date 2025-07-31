@@ -3,15 +3,15 @@
 import React, { useState, useEffect } from "react";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
-import sPUSDJson from "@/contracts/sPUSD.sol/sPUSD.json";
-import PUSDJson from "@/contracts/PUSD.sol/PUSD.json";
+import sCUSDJson from "@/contracts/sCUSD.sol/sCUSD.json";
+import CUSDJson from "@/contracts/CUSD.sol/CUSD.json";
 import ContractAddresses from "../../deployed-address.json";
 
-const SPUSDPage = () => {
+const SCUSDPage = () => {
   const [activeTab, setActiveTab] = useState("deposit");
   const [amount, setAmount] = useState("");
   const [USBDBalance, setUSBDBalance] = useState("0");
-  const [spusdBalance, setSpusdBalance] = useState("0");
+  const [sCUSDBalance, setSCUSDBalance] = useState("0");
   const [shareBalance, setShareBalance] = useState("0");
   const [conversionRate, setConversionRate] = useState("1");
   const [loading, setLoading] = useState(false);
@@ -30,19 +30,19 @@ const SPUSDPage = () => {
     if (!address || !publicClient) return;
 
     try {
-      // Fetch PUSD balance (asset)
-      const pusdBalanceData = (await publicClient.readContract({
-        address: ContractAddresses.PUSD as `0x${string}`,
-        abi: PUSDJson.abi,
+      // Fetch CUSD balance (asset)
+      const CUSDBalanceData = (await publicClient.readContract({
+        address: ContractAddresses.CUSD as `0x${string}`,
+        abi: CUSDJson.abi,
         functionName: "balanceOf",
         args: [address],
       })) as bigint;
-      setUSBDBalance(formatUnits(pusdBalanceData, 18));
+      setUSBDBalance(formatUnits(CUSDBalanceData, 18));
 
-      // Fetch sPUSD balance (shares)
+      // Fetch sCUSD balance (shares)
       const shareBalanceData = (await publicClient.readContract({
-        address: ContractAddresses.sPUSD as `0x${string}`,
-        abi: sPUSDJson.abi,
+        address: ContractAddresses.sCUSD as `0x${string}`,
+        abi: sCUSDJson.abi,
         functionName: "balanceOf",
         args: [address],
       })) as bigint;
@@ -50,14 +50,14 @@ const SPUSDPage = () => {
 
       // Get total assets and shares to calculate conversion rate
       const totalAssets = (await publicClient.readContract({
-        address: ContractAddresses.sPUSD as `0x${string}`,
-        abi: sPUSDJson.abi,
+        address: ContractAddresses.sCUSD as `0x${string}`,
+        abi: sCUSDJson.abi,
         functionName: "totalAssets",
         args: [],
       })) as bigint;
       const totalShares = (await publicClient.readContract({
-        address: ContractAddresses.sPUSD as `0x${string}`,
-        abi: sPUSDJson.abi,
+        address: ContractAddresses.sCUSD as `0x${string}`,
+        abi: sCUSDJson.abi,
         functionName: "totalSupply",
         args: [],
       })) as bigint;
@@ -70,24 +70,24 @@ const SPUSDPage = () => {
       if (amount && activeTab === "deposit") {
         const assets = parseUnits(amount, 18);
         const previewShares = (await publicClient.readContract({
-          address: ContractAddresses.sPUSD as `0x${string}`,
-          abi: sPUSDJson.abi,
+          address: ContractAddresses.sCUSD as `0x${string}`,
+          abi: sCUSDJson.abi,
           functionName: "previewDeposit",
           args: [assets],
         })) as bigint;
-        setSpusdBalance(formatUnits(previewShares, 18));
+        setSCUSDBalance(formatUnits(previewShares, 18));
       }
 
       // Preview assets for current amount if withdrawing
       if (amount && activeTab === "withdraw") {
         const shares = parseUnits(amount, 18);
         const previewAssets = (await publicClient.readContract({
-          address: ContractAddresses.sPUSD as `0x${string}`,
-          abi: sPUSDJson.abi,
+          address: ContractAddresses.sCUSD as `0x${string}`,
+          abi: sCUSDJson.abi,
           functionName: "previewRedeem",
           args: [shares],
         })) as bigint;
-        setSpusdBalance(formatUnits(previewAssets, 18));
+        setSCUSDBalance(formatUnits(previewAssets, 18));
       }
     } catch (err) {
       console.error("Error fetching vault data:", err);
@@ -122,12 +122,12 @@ const SPUSDPage = () => {
 
     setLoading(true);
     try {
-      // First approve PUSD
+      // First approve CUSD
       const { request: approveRequest } = await publicClient.simulateContract({
-        address: ContractAddresses.PUSD as `0x${string}`,
-        abi: PUSDJson.abi,
+        address: ContractAddresses.CUSD as `0x${string}`,
+        abi: CUSDJson.abi,
         functionName: "approve",
-        args: [ContractAddresses.sPUSD, parseUnits(amount, 18)],
+        args: [ContractAddresses.sCUSD, parseUnits(amount, 18)],
         account: address,
       });
 
@@ -136,8 +136,8 @@ const SPUSDPage = () => {
 
       // Deposit assets
       const { request: depositRequest } = await publicClient.simulateContract({
-        address: ContractAddresses.sPUSD as `0x${string}`,
-        abi: sPUSDJson.abi,
+        address: ContractAddresses.sCUSD as `0x${string}`,
+        abi: sCUSDJson.abi,
         functionName: "deposit",
         args: [parseUnits(amount, 18), address],
         account: address,
@@ -148,7 +148,7 @@ const SPUSDPage = () => {
 
       fetchVaultData();
       setAmount("");
-      showNotification(`Successfully deposited ${amount} PUSD`, "success");
+      showNotification(`Successfully deposited ${amount} CUSD`, "success");
     } catch (error: unknown) {
       console.error("Error depositing:", error);
       showNotification(
@@ -175,8 +175,8 @@ const SPUSDPage = () => {
     setLoading(true);
     try {
       const { request } = await publicClient.simulateContract({
-        address: ContractAddresses.sPUSD as `0x${string}`,
-        abi: sPUSDJson.abi,
+        address: ContractAddresses.sCUSD as `0x${string}`,
+        abi: sCUSDJson.abi,
         functionName: "redeem",
         args: [parseUnits(amount, 18), address, address],
         account: address,
@@ -188,7 +188,7 @@ const SPUSDPage = () => {
       fetchVaultData();
       setAmount("");
       showNotification(
-        `Successfully withdrawn ${spusdBalance} PUSD`,
+        `Successfully withdrawn ${sCUSDBalance} CUSD`,
         "success"
       );
     } catch (error: unknown) {
@@ -234,7 +234,7 @@ const SPUSDPage = () => {
             fontFamily: "monospace",
           }}
         >
-          SPUSD VAULT
+          SCUSD VAULT
         </h1>
 
         {notification.show && (
@@ -277,21 +277,21 @@ const SPUSDPage = () => {
           {/* Balances */}
           <div className="mb-6">
             <p className="text-gray-300 mb-2">
-              Your PUSD Balance:{" "}
+              Your CUSD Balance:{" "}
               <span className="text-[#FF8C00] font-bold">
-                {formatNumber(USBDBalance)} PUSD
+                {formatNumber(USBDBalance)} CUSD
               </span>
             </p>
             <p className="text-gray-300 mb-2">
-              Your sPUSD Balance:{" "}
+              Your sCUSD Balance:{" "}
               <span className="text-[#FF8C00] font-bold">
-                {formatNumber(shareBalance)} sPUSD
+                {formatNumber(shareBalance)} sCUSD
               </span>
             </p>
             <p className="text-gray-300 mb-4">
               Exchange Rate:{" "}
               <span className="text-[#FF8C00] font-bold">
-                {formatNumber(conversionRate)} PUSD per sPUSD
+                {formatNumber(conversionRate)} CUSD per sCUSD
               </span>
             </p>
           </div>
@@ -300,8 +300,8 @@ const SPUSDPage = () => {
           <div className="mb-6">
             <label className="block text-sm font-medium text-[#FF8C00] mb-1">
               {activeTab === "deposit"
-                ? "PUSD Amount to Deposit"
-                : "sPUSD Shares to Redeem"}
+                ? "CUSD Amount to Deposit"
+                : "sCUSD Shares to Redeem"}
             </label>
             <input
               type="text"
@@ -314,8 +314,8 @@ const SPUSDPage = () => {
             {amount && (
               <p className="text-sm text-gray-400 mt-2">
                 {activeTab === "deposit"
-                  ? `You will receive: ${formatNumber(spusdBalance)} sPUSD`
-                  : `You will receive: ${formatNumber(spusdBalance)} PUSD`}
+                  ? `You will receive: ${formatNumber(sCUSDBalance)} sCUSD`
+                  : `You will receive: ${formatNumber(sCUSDBalance)} CUSD`}
               </p>
             )}
           </div>
@@ -331,23 +331,23 @@ const SPUSDPage = () => {
             {loading
               ? "Processing..."
               : activeTab === "deposit"
-              ? "Deposit PUSD"
-              : "Withdraw PUSD"}
+              ? "Deposit CUSD"
+              : "Withdraw CUSD"}
           </button>
         </div>
 
         {/* Info Box */}
         <div className="mt-8 bg-black border border-gray-800 p-4 rounded-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
           <h2 className="text-lg font-semibold mb-2 text-[#FF8C00]">
-            About sPUSD Vault
+            About sCUSD Vault
           </h2>
           <p className="text-gray-300 mb-2">
-            sPUSD is an ERC4626 tokenized vault that accepts USBD deposits and
-            provides sPUSD shares in return.
+            sCUSD is an ERC4626 tokenized vault that accepts USBD deposits and
+            provides sCUSD shares in return.
           </p>
           <p className="text-gray-300">
             The vault automatically compounds yield from lending markets,
-            increasing the value of each sPUSD share over time.
+            increasing the value of each sCUSD share over time.
           </p>
         </div>
       </div>
@@ -355,4 +355,4 @@ const SPUSDPage = () => {
   );
 };
 
-export default SPUSDPage;
+export default SCUSDPage;

@@ -38,10 +38,10 @@ const Navbar = () => {
             RESTAKING
           </Link>
           <Link
-            href="/spusd"
+            href="/cpusd"
             className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
-            SPUSD
+            SCUSD
           </Link>
           {/* <Link
             href="/USBD"

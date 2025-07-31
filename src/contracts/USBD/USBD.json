@@ -166,11 +166,11 @@
           {
             "indexed": true,
             "internalType": "address",
-            "name": "pusdAddress",
+            "name": "CUSDAddress",
             "type": "address"
           }
         ],
-        "name": "PUSDAddressSet",
+        "name": "CUSDAddressSet",
         "type": "event"
       },
       {
@@ -233,7 +233,7 @@
             "type": "uint256"
           }
         ],
-        "name": "TransferredToPUSD",
+        "name": "TransferredToCUSD",
         "type": "event"
       },
       {
@@ -363,7 +363,7 @@
             "type": "uint256"
           }
         ],
-        "name": "mintToPUSD",
+        "name": "mintToCUSD",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -409,7 +409,7 @@
       },
       {
         "inputs": [],
-        "name": "pusdAddress",
+        "name": "CUSDAddress",
         "outputs": [
           {
             "internalType": "address",
@@ -444,11 +444,11 @@
         "inputs": [
           {
             "internalType": "address",
-            "name": "_pusdAddress",
+            "name": "_CUSDAddress",
             "type": "address"
           }
         ],
-        "name": "setPusdAddress",
+        "name": "setCUSDAddress",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
@@ -558,7 +558,7 @@
             "type": "uint256"
           }
         ],
-        "name": "transferToPusd",
+        "name": "transferToCUSD",
         "outputs": [
           {
             "internalType": "bool",
