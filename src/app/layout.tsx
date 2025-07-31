@@ -21,7 +21,7 @@ import { coreTestnet2 } from 'viem/chains';
 
 const inter = Inter({ subsets: ['latin'] });
 
-// Configure RainbowKit with our custom Pharos chain
+// Configure RainbowKit with our custom CORE chain
 const config = getDefaultConfig({
   appName: 'StableCORE',
   projectId: 'YOUR_PROJECT_ID',

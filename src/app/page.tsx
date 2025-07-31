@@ -9,6 +9,7 @@ import Link from "next/link";
 import Image from "next/image";
 import USBDJson from "@/contracts/USBD/USBD.json";
 import CUSDJson from "@/contracts/CUSD.sol/CUSD.json";
+import sCUSDJson from "@/contracts/sCUSD.sol/sCUSD.json";
 import stCOREJson from "@/contracts/stCORE/stCORE.json";
 import EigenJson from "@/contracts/Eigen.sol/Eigen.json";
 import ContractAddresses from "../deployed-address.json";
@@ -24,6 +25,19 @@ const HomePage = () => {
   const [USBDError, setUSBDError] = useState("");
   const [success, setSuccess] = useState("");
   const [USBDSuccess, setUSBDSuccess] = useState("");
+
+  // sCUSD vault states
+  const [sCUSDBalance, setSCUSDBalance] = useState("0");
+  const [sCUSDShareBalance, setSCUSDShareBalance] = useState("0");
+  const [sCUSDConversionRate, setSCUSDConversionRate] = useState("1");
+  const [sCUSDLoading, setSCUSDLoading] = useState(false);
+  const [sCUSDNotification, setSCUSDNotification] = useState({
+    show: false,
+    message: "",
+    type: "",
+  });
+  const [sCUSDAmount, setSCUSDAmount] = useState("");
+  const [sCUSDActiveTab, setSCUSDActiveTab] = useState("deposit");
 
   // Restaking states
   const [stCOREBalance, setstCOREBalance] = useState("0");
@@ -87,6 +101,7 @@ const HomePage = () => {
   useEffect(() => {
     if (isConnected && address && publicClient) {
       fetchBalances();
+      fetchSCUSDVaultData();
     }
   }, [address, isConnected, publicClient]);
 
@@ -96,6 +111,15 @@ const HomePage = () => {
     // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
       setAmount(value);
+    }
+  };
+
+  // Handle input change for sCUSD
+  const handleSCUSDAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Only allow numbers and decimals
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      setSCUSDAmount(value);
     }
   };
 
@@ -208,6 +232,153 @@ const HomePage = () => {
       setError(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // sCUSD vault functions
+  const fetchSCUSDVaultData = async () => {
+    if (!address || !publicClient) return;
+
+    try {
+      // Fetch CUSD balance (asset)
+      const CUSDBalanceData = (await publicClient.readContract({
+        address: ContractAddresses.CUSD as `0x${string}`,
+        abi: CUSDJson.abi,
+        functionName: "balanceOf",
+        args: [address],
+      })) as bigint;
+      setSCUSDBalance(formatUnits(CUSDBalanceData, 18));
+
+      // Fetch sCUSD balance (shares)
+      const shareBalanceData = (await publicClient.readContract({
+        address: ContractAddresses.sCUSD as `0x${string}`,
+        abi: sCUSDJson.abi,
+        functionName: "balanceOf",
+        args: [address],
+      })) as bigint;
+      setSCUSDShareBalance(formatUnits(shareBalanceData, 18));
+
+      // Get total assets and shares to calculate conversion rate
+      const totalAssets = (await publicClient.readContract({
+        address: ContractAddresses.sCUSD as `0x${string}`,
+        abi: sCUSDJson.abi,
+        functionName: "totalAssets",
+        args: [],
+      })) as bigint;
+      const totalShares = (await publicClient.readContract({
+        address: ContractAddresses.sCUSD as `0x${string}`,
+        abi: sCUSDJson.abi,
+        functionName: "totalSupply",
+        args: [],
+      })) as bigint;
+
+      // Calculate conversion rate (assets per share)
+      const assetsPerShare = Number(totalAssets) / Number(totalShares);
+      setSCUSDConversionRate(assetsPerShare.toString());
+    } catch (err) {
+      console.error("Error fetching sCUSD vault data:", err);
+    }
+  };
+
+  // Show sCUSD notification helper
+  const showSCUSDNotification = (message: string, type: string) => {
+    setSCUSDNotification({ show: true, message, type });
+    setTimeout(() => {
+      setSCUSDNotification({ show: false, message: "", type: "" });
+    }, 5000);
+  };
+
+  // Handle sCUSD deposit
+  const handleSCUSDDeposit = async () => {
+    if (!sCUSDAmount || parseFloat(sCUSDAmount) <= 0) {
+      showSCUSDNotification("Please enter a valid amount", "error");
+      return;
+    }
+
+    if (!walletClient || !publicClient) {
+      showSCUSDNotification("Wallet not connected properly", "error");
+      return;
+    }
+
+    setSCUSDLoading(true);
+    try {
+      // First approve CUSD
+      const { request: approveRequest } = await publicClient.simulateContract({
+        address: ContractAddresses.CUSD as `0x${string}`,
+        abi: CUSDJson.abi,
+        functionName: "approve",
+        args: [ContractAddresses.sCUSD, parseUnits(sCUSDAmount, 18)],
+        account: address,
+      });
+
+      const approveHash = await walletClient.writeContract(approveRequest);
+      await publicClient.waitForTransactionReceipt({ hash: approveHash });
+
+      // Deposit assets
+      const { request: depositRequest } = await publicClient.simulateContract({
+        address: ContractAddresses.sCUSD as `0x${string}`,
+        abi: sCUSDJson.abi,
+        functionName: "deposit",
+        args: [parseUnits(sCUSDAmount, 18), address],
+        account: address,
+      });
+
+      const depositHash = await walletClient.writeContract(depositRequest);
+      await publicClient.waitForTransactionReceipt({ hash: depositHash });
+
+      fetchSCUSDVaultData();
+      setSCUSDAmount("");
+      showSCUSDNotification(`Successfully deposited ${sCUSDAmount} CUSD`, "success");
+    } catch (error: unknown) {
+      console.error("Error depositing:", error);
+      showSCUSDNotification(
+        error instanceof Error ? error.message : "Failed to deposit",
+        "error"
+      );
+    } finally {
+      setSCUSDLoading(false);
+    }
+  };
+
+  // Handle sCUSD withdraw
+  const handleSCUSDWithdraw = async () => {
+    if (!sCUSDAmount || parseFloat(sCUSDAmount) <= 0) {
+      showSCUSDNotification("Please enter a valid amount", "error");
+      return;
+    }
+
+    if (!walletClient || !publicClient) {
+      showSCUSDNotification("Wallet not connected properly", "error");
+      return;
+    }
+
+    setSCUSDLoading(true);
+    try {
+      const { request } = await publicClient.simulateContract({
+        address: ContractAddresses.sCUSD as `0x${string}`,
+        abi: sCUSDJson.abi,
+        functionName: "redeem",
+        args: [parseUnits(sCUSDAmount, 18), address, address],
+        account: address,
+      });
+
+      const hash = await walletClient.writeContract(request);
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      fetchSCUSDVaultData();
+      setSCUSDAmount("");
+      showSCUSDNotification(
+        `Successfully withdrawn ${sCUSDAmount} CUSD`,
+        "success"
+      );
+    } catch (error: unknown) {
+      console.error("Error withdrawing:", error);
+      showSCUSDNotification(
+        error instanceof Error ? error.message : "Failed to withdraw",
+        "error"
+      );
+    } finally {
+      setSCUSDLoading(false);
     }
   };
 
@@ -562,7 +733,10 @@ const HomePage = () => {
                   </div>
 
                   {/* Step 2 - CUSD */}
-                  <div className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative">
+                  <div 
+                    onClick={() => setSelectedStep("cusd")}
+                    className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative"
+                  >
                     <div className="flex-shrink-0 relative z-10">
                       <div className="w-16 h-16 rounded-lg border-2 border-gray-600 hover:border-[#FF8C00] transition-colors duration-300 flex items-center justify-center bg-black group-hover:bg-[#FF8C00] group-hover:text-black">
                         <span className="text-2xl font-bold text-white group-hover:text-black transition-colors">2</span>
@@ -925,6 +1099,135 @@ const HomePage = () => {
                           When you delegate your stCORE tokens to an operator, they can use your
                           stake to validate transactions across different networks, increasing
                           your potential rewards.
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {selectedStep === "cusd" && (
+                <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
+                  <h2 className="text-2xl font-bold mb-6 text-[#FF8C00] font-mono">
+                    SCUSD VAULT
+                  </h2>
+
+                  {/* Notification */}
+                  {sCUSDNotification.show && (
+                    <div
+                      className={`mb-4 p-3 rounded-md ${
+                        sCUSDNotification.type === "error"
+                          ? "bg-red-900 bg-opacity-50 text-red-200"
+                          : "bg-green-900 bg-opacity-50 text-green-200"
+                      }`}
+                    >
+                      {sCUSDNotification.message}
+                    </div>
+                  )}
+
+                  {!isConnected ? (
+                    <div className="bg-black border border-gray-800 p-4 rounded-lg">
+                      <p className="text-center text-gray-300">
+                        Please connect your wallet to use sCUSD vault
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Main sCUSD Vault Interface */}
+                      <div className="bg-black border border-gray-800 p-4 rounded-lg mb-4">
+                        {/* Tabs */}
+                        <div className="flex mb-4 border-b border-gray-800">
+                          <button
+                            onClick={() => setSCUSDActiveTab("deposit")}
+                            className={`py-2 px-4 ${
+                              sCUSDActiveTab === "deposit"
+                                ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
+                                : "text-gray-400"
+                            }`}
+                          >
+                            Deposit
+                          </button>
+                          <button
+                            onClick={() => setSCUSDActiveTab("withdraw")}
+                            className={`py-2 px-4 ${
+                              sCUSDActiveTab === "withdraw"
+                                ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
+                                : "text-gray-400"
+                            }`}
+                          >
+                            Withdraw
+                          </button>
+                        </div>
+
+                        {/* Balances */}
+                        <div className="mb-4 p-3 bg-gray-900 bg-opacity-50 rounded-lg">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-gray-400 text-sm">Your CUSD Balance</span>
+                            <span className="text-lg font-semibold">{sCUSDBalance} CUSD</span>
+                          </div>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-gray-400 text-sm">Your sCUSD Balance</span>
+                            <span className="text-lg font-semibold">
+                              {sCUSDShareBalance} sCUSD
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">Exchange Rate</span>
+                            <span className="text-lg font-semibold">
+                              {sCUSDConversionRate} CUSD per sCUSD
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Input Form */}
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-[#FF8C00] mb-1">
+                            {sCUSDActiveTab === "deposit"
+                              ? "CUSD Amount to Deposit"
+                              : "sCUSD Shares to Redeem"}
+                          </label>
+                          <input
+                            type="text"
+                            value={sCUSDAmount}
+                            onChange={handleSCUSDAmountChange}
+                            placeholder="0.00"
+                            className="w-full px-3 py-2 bg-gray-800 bg-opacity-50 border border-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C00]"
+                            disabled={sCUSDLoading}
+                          />
+                        </div>
+
+                        {/* Action Button */}
+                        <div>
+                          <button
+                            onClick={
+                              sCUSDActiveTab === "deposit" ? handleSCUSDDeposit : handleSCUSDWithdraw
+                            }
+                            disabled={sCUSDLoading || !sCUSDAmount}
+                            className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${
+                              sCUSDLoading ? "opacity-70" : ""
+                            } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+                          >
+                            {sCUSDLoading
+                              ? "Processing..."
+                              : sCUSDActiveTab === "deposit"
+                              ? "Deposit CUSD"
+                              : "Withdraw CUSD"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* About sCUSD Vault */}
+                      <div className="bg-black border border-gray-800 p-4 rounded-lg">
+                        <h3 className="text-lg font-semibold mb-2 text-[#FF8C00]">
+                          About sCUSD Vault
+                        </h3>
+                        <p className="text-gray-300 mb-2 text-sm">
+                          sCUSD is an ERC4626 tokenized vault that accepts CUSD deposits and
+                          provides sCUSD shares in return.
+                        </p>
+                        <p className="text-gray-300 text-sm">
+                          The vault automatically compounds yield from lending markets,
+                          increasing the value of each sCUSD share over time.
                         </p>
                       </div>
                     </>
