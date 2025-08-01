@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
-import stCOREJson from "@/contracts/stCORE/stCORE.json";
+import stCOREJson from "@/contracts/stCORE.sol/stCORE.json";
 import EigenJson from "@/contracts/Eigen.sol/Eigen.json";
 import ContractAddresses from "../../deployed-address.json";
 
@@ -233,11 +233,10 @@ const RestakingScreen = () => {
         {/* Notification */}
         {notification.show && (
           <div
-            className={`mb-4 p-3 rounded-md ${
-              notification.type === "error"
+            className={`mb-4 p-3 rounded-md ${notification.type === "error"
                 ? "bg-red-900 bg-opacity-50 text-red-200"
                 : "bg-green-900 bg-opacity-50 text-green-200"
-            }`}
+              }`}
           >
             {notification.message}
           </div>
@@ -258,13 +257,12 @@ const RestakingScreen = () => {
                   Need stCORE to delegate? Get 10 stCORE for testing
                 </p>
               </div>
-              
+
               <button
                 onClick={handlestCOREMint}
                 disabled={stCORELoading}
-                className={`px-6 py-3 rounded-md text-white font-medium transition-colors ${
-                  stCORELoading ? "opacity-70" : ""
-                } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+                className={`px-6 py-3 rounded-md text-white font-medium transition-colors ${stCORELoading ? "opacity-70" : ""
+                  } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
               >
                 {stCORELoading ? "Processing..." : "Mint 10 stCORE"}
               </button>
@@ -278,21 +276,19 @@ const RestakingScreen = () => {
           <div className="flex mb-6 border-b border-gray-800">
             <button
               onClick={() => setActiveTab("delegate")}
-              className={`py-2 px-4 ${
-                activeTab === "delegate"
+              className={`py-2 px-4 ${activeTab === "delegate"
                   ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
                   : "text-gray-400"
-              }`}
+                }`}
             >
               Delegate
             </button>
             <button
               onClick={() => setActiveTab("undelegate")}
-              className={`py-2 px-4 ${
-                activeTab === "undelegate"
+              className={`py-2 px-4 ${activeTab === "undelegate"
                   ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
                   : "text-gray-400"
-              }`}
+                }`}
             >
               Undelegate
             </button>
@@ -344,15 +340,14 @@ const RestakingScreen = () => {
                 activeTab === "delegate" ? handleDelegate : handleUndelegate
               }
               disabled={isLoading}
-              className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${
-                isLoading ? "opacity-70" : ""
-              } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+              className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${isLoading ? "opacity-70" : ""
+                } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
             >
               {isLoading
                 ? "Processing..."
                 : activeTab === "delegate"
-                ? "Delegate Tokens"
-                : "Undelegate Tokens"}
+                  ? "Delegate Tokens"
+                  : "Undelegate Tokens"}
             </button>
           </div>
         </div>

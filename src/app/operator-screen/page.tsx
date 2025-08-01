@@ -94,6 +94,7 @@ export default function OperatorScreen() {
   const [USBDBalance, setUSBDBalance] = useState("0");
   const [operatorBalance, setOperatorBalance] = useState("0");
   const [delegatedAmount, setDelegatedAmount] = useState("0");
+  const [delegatedAmountLoading, setDelegatedAmountLoading] = useState(false);
 
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
@@ -109,6 +110,34 @@ export default function OperatorScreen() {
     }
   }, [address, isConnected, publicClient]);
 
+  // Debug effect to log delegated amount changes
+  useEffect(() => {
+    console.log("Delegated amount updated:", delegatedAmount);
+  }, [delegatedAmount]);
+
+  // Function to retry fetching delegated amount
+  const retryFetchDelegatedAmount = async () => {
+    if (!address || !publicClient) return;
+
+    setDelegatedAmountLoading(true);
+    try {
+      const delegatedData = await publicClient.readContract({
+        address: ContractAddresses.Eigen as `0x${string}`,
+        abi: EigenJson.abi,
+        functionName: "getDelegatedAmount",
+        args: [address],
+      });
+
+      setDelegatedAmount(formatUnits(delegatedData as bigint, 18));
+      console.log("Delegated amount retry successful:", formatUnits(delegatedData as bigint, 18));
+    } catch (err) {
+      console.error("Error retrying delegated amount fetch:", err);
+      setDelegatedAmount("0");
+    } finally {
+      setDelegatedAmountLoading(false);
+    }
+  };
+
   // Fetch stCORE and USBD balances
   const fetchBalances = async () => {
     if (!address || !publicClient) return;
@@ -123,8 +152,14 @@ export default function OperatorScreen() {
       });
 
       setUSBDBalance(formatUnits(USBDBalanceData as bigint, 18));
+    } catch (err) {
+      console.error("Error fetching USBD balance:", err);
+      setUSBDBalance("0");
+    }
 
-      // Fetch delegated amount from Eigen contract
+    // Fetch delegated amount from Eigen contract separately to ensure it's always attempted
+    setDelegatedAmountLoading(true);
+    try {
       const delegatedData = await publicClient.readContract({
         address: ContractAddresses.Eigen as `0x${string}`,
         abi: EigenJson.abi,
@@ -133,8 +168,12 @@ export default function OperatorScreen() {
       });
 
       setDelegatedAmount(formatUnits(delegatedData as bigint, 18));
+      console.log("Delegated amount fetched successfully:", formatUnits(delegatedData as bigint, 18));
     } catch (err) {
-      console.error("Error fetching balances:", err);
+      console.error("Error fetching delegated amount:", err);
+      setDelegatedAmount("0");
+    } finally {
+      setDelegatedAmountLoading(false);
     }
   };
 
@@ -157,17 +196,8 @@ export default function OperatorScreen() {
 
       // Check if loanDetails has valid values before formatting
       if (loanDetailsResponse) {
-        // Get the delegated amount from the Eigen contract
-        const delegatedData = await publicClient.readContract({
-          address: ContractAddresses.Eigen as `0x${string}`,
-          abi: EigenJson.abi,
-          functionName: "getDelegatedAmount",
-          args: [address],
-        });
-
-        const delegatedAmount = formatUnits(delegatedData as bigint, 18);
-
-        // Format the collateral amount to a readable number
+        // Use the already fetched delegated amount from fetchBalances
+        // Don't fetch it again here to avoid conflicts
         const collateralAmount = delegatedAmount || "0";
 
         // Set the loan directly in the component state
@@ -420,11 +450,10 @@ export default function OperatorScreen() {
           {/* Notification */}
           {notification.show && (
             <div
-              className={`mb-6 p-3 rounded-md ${
-                notification.type === "error"
+              className={`mb-6 p-3 rounded-md ${notification.type === "error"
                   ? "bg-red-900 bg-opacity-50 text-red-200"
                   : "bg-green-900 bg-opacity-50 text-green-200"
-              }`}
+                }`}
             >
               {notification.message}
             </div>
@@ -433,41 +462,37 @@ export default function OperatorScreen() {
           {/* Tabs */}
           <div className="flex border-b border-gray-800 mb-8">
             <button
-              className={`px-6 py-3 font-medium ${
-                activeTab === "rwa"
+              className={`px-6 py-3 font-medium ${activeTab === "rwa"
                   ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
                   : "text-gray-400"
-              }`}
+                }`}
               onClick={() => setActiveTab("rwa")}
             >
               About RWA
             </button>
             <button
-              className={`px-6 py-3 font-medium ${
-                activeTab === "loans"
+              className={`px-6 py-3 font-medium ${activeTab === "loans"
                   ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
                   : "text-gray-400"
-              }`}
+                }`}
               onClick={() => setActiveTab("loans")}
             >
               Existing Loans
             </button>
             <button
-              className={`px-6 py-3 font-medium ${
-                activeTab === "take"
+              className={`px-6 py-3 font-medium ${activeTab === "take"
                   ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
                   : "text-gray-400"
-              }`}
+                }`}
               onClick={() => setActiveTab("take")}
             >
               Take Loan
             </button>
             <button
-              className={`px-6 py-3 font-medium ${
-                activeTab === "repay"
+              className={`px-6 py-3 font-medium ${activeTab === "repay"
                   ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
                   : "text-gray-400"
-              }`}
+                }`}
               onClick={() => setActiveTab("repay")}
             >
               Repay Loan
@@ -508,11 +533,10 @@ export default function OperatorScreen() {
                       <div
                         className="h-full bg-[#FF8C00]"
                         style={{
-                          width: `${
-                            (parseFloat(rwaData.baseYield) /
+                          width: `${(parseFloat(rwaData.baseYield) /
                               parseFloat(rwaData.currentYield)) *
                             100
-                          }%`,
+                            }%`,
                         }}
                       ></div>
                     </div>
@@ -555,10 +579,9 @@ export default function OperatorScreen() {
                         <div
                           className="h-full bg-purple-500"
                           style={{
-                            width: `${
-                              (parseFloat(
-                                rwaData.restaking.loanTaken.replace(/,/g, "")
-                              ) /
+                            width: `${(parseFloat(
+                              rwaData.restaking.loanTaken.replace(/,/g, "")
+                            ) /
                                 parseFloat(
                                   rwaData.restaking.totalRestaked.replace(
                                     /,/g,
@@ -566,7 +589,7 @@ export default function OperatorScreen() {
                                   )
                                 )) *
                               100
-                            }%`,
+                              }%`,
                           }}
                         ></div>
                       </div>
@@ -581,13 +604,12 @@ export default function OperatorScreen() {
                         <div
                           className="h-full bg-blue-500"
                           style={{
-                            width: `${
-                              (parseFloat(
-                                rwaData.restaking.loanAvailable.replace(
-                                  /,/g,
-                                  ""
-                                )
-                              ) /
+                            width: `${(parseFloat(
+                              rwaData.restaking.loanAvailable.replace(
+                                /,/g,
+                                ""
+                              )
+                            ) /
                                 parseFloat(
                                   rwaData.restaking.totalRestaked.replace(
                                     /,/g,
@@ -595,7 +617,7 @@ export default function OperatorScreen() {
                                   )
                                 )) *
                               100
-                            }%`,
+                              }%`,
                           }}
                         ></div>
                       </div>
@@ -700,9 +722,39 @@ export default function OperatorScreen() {
             >
               <h2 className="text-2xl font-bold mb-6">Your Active Loans</h2>
 
+              {/* Delegated Balance Display */}
+              <div className="mb-6 p-4 bg-gray-900 bg-opacity-50 rounded-lg border border-[#FF8C00]">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <span className="text-gray-400 text-lg">Your Total Delegated stCORE</span>
+                    <span className="text-2xl font-bold text-[#FF8C00] block">
+                      {delegatedAmountLoading ? "Loading..." : `${delegatedAmount} stCORE`}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        fetchBalances();
+                        fetchActiveLoans();
+                        retryFetchDelegatedAmount();
+                      }}
+                      className="px-4 py-2 bg-[#FF8C00] text-black rounded-lg hover:bg-opacity-90 transition-colors"
+                    >
+                      Refresh All
+                    </button>
+                    <button
+                      onClick={retryFetchDelegatedAmount}
+                      className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                    >
+                      Retry Delegated
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {loanDetails &&
-              !loanDetails.isRepaid &&
-              parseFloat(loanDetails.amount) > 0 ? (
+                !loanDetails.isRepaid &&
+                parseFloat(loanDetails.amount) > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -770,8 +822,8 @@ export default function OperatorScreen() {
               <h2 className="text-2xl font-bold mb-6">Take a New Loan</h2>
 
               {loanDetails &&
-              !loanDetails.isRepaid &&
-              parseFloat(loanDetails.amount) > 0 ? (
+                !loanDetails.isRepaid &&
+                parseFloat(loanDetails.amount) > 0 ? (
                 <div className="mb-6 p-4 bg-red-900 bg-opacity-50 rounded-lg">
                   <h3 className="text-xl font-semibold mb-4 text-red-200">
                     Existing Active Loan
@@ -820,7 +872,12 @@ export default function OperatorScreen() {
                       </div>
                       <div>
                         <p className="text-gray-400">Total Delegated stCORE</p>
-                        <p className="font-medium">{delegatedAmount} stCORE</p>
+                        <p className="font-medium text-[#FF8C00]">
+                          {delegatedAmountLoading ? "Loading..." : `${delegatedAmount} stCORE`}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {delegatedAmountLoading ? "Fetching..." : (delegatedAmount !== "0" ? "Fetched" : "Not fetched")}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -880,9 +937,8 @@ export default function OperatorScreen() {
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className={`w-full bg-[#FF8C00] text-black py-4 rounded-lg font-bold text-lg hover:bg-opacity-90 transition duration-300 ${
-                        isLoading ? "opacity-70" : ""
-                      }`}
+                      className={`w-full bg-[#FF8C00] text-black py-4 rounded-lg font-bold text-lg hover:bg-opacity-90 transition duration-300 ${isLoading ? "opacity-70" : ""
+                        }`}
                     >
                       {isLoading ? "PROCESSING..." : "TAKE LOAN"}
                     </button>
@@ -922,8 +978,8 @@ export default function OperatorScreen() {
               </div>
 
               {loanDetails &&
-              !loanDetails.isRepaid &&
-              parseFloat(loanDetails.amount) > 0 ? (
+                !loanDetails.isRepaid &&
+                parseFloat(loanDetails.amount) > 0 ? (
                 <form onSubmit={handleRepayLoan}>
                   <div className="mb-6">
                     <label className="block text-gray-300 mb-2">

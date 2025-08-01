@@ -313,15 +313,6 @@ const HomePage = () => {
         return;
       }
 
-      // Fetch CUSD balance (asset)
-      const CUSDBalanceData = (await publicClient.readContract({
-        address: cusdAddress as `0x${string}`,
-        abi: CUSDJson.abi,
-        functionName: "balanceOf",
-        args: [address],
-      })) as bigint;
-      setSCUSDBalance(formatUnits(CUSDBalanceData, 18));
-
       // Fetch sCUSD balance (shares)
       const shareBalanceData = (await publicClient.readContract({
         address: scusdAddress as `0x${string}`,
@@ -330,6 +321,19 @@ const HomePage = () => {
         args: [address],
       })) as bigint;
       setSCUSDShareBalance(formatUnits(shareBalanceData, 18));
+
+      // Convert shares to assets to get the user's vault balance in CUSD
+      if (shareBalanceData > BigInt(0)) {
+        const vaultBalanceData = (await publicClient.readContract({
+          address: scusdAddress as `0x${string}`,
+          abi: sCUSDJson.abi,
+          functionName: "convertToAssets",
+          args: [shareBalanceData],
+        })) as bigint;
+        setSCUSDBalance(formatUnits(vaultBalanceData, 18));
+      } else {
+        setSCUSDBalance("0");
+      }
 
       // Get total assets and shares to calculate conversion rate
       const totalAssets = (await publicClient.readContract({
@@ -350,6 +354,45 @@ const HomePage = () => {
       setSCUSDConversionRate(assetsPerShare.toString());
     } catch (err) {
       console.error("Error fetching sCUSD vault data:", err);
+    }
+  };
+
+  // Helper function to check if contract has required functions
+  const checkContractFunctions = async (contractAddress: string, abi: any) => {
+    if (!publicClient) return false;
+
+    try {
+      // Try to call a basic function to check if contract exists and has expected interface
+      await publicClient.readContract({
+        address: contractAddress as `0x${string}`,
+        abi: abi,
+        functionName: "totalAssets",
+        args: [],
+      });
+      return true;
+    } catch (error) {
+      console.error("Contract function check failed:", error);
+      return false;
+    }
+  };
+
+  // Helper function to log contract details for debugging
+  const logContractDetails = async (contractAddress: string, contractName: string) => {
+    if (!publicClient) return;
+
+    try {
+      console.log(`Checking ${contractName} contract at address:`, contractAddress);
+
+      // Try to get contract code to verify it exists
+      const code = await publicClient.getBytecode({ address: contractAddress as `0x${string}` });
+      if (!code || code === '0x') {
+        console.error(`${contractName} contract has no code at address:`, contractAddress);
+        return;
+      }
+
+      console.log(`${contractName} contract exists at address:`, contractAddress);
+    } catch (error) {
+      console.error(`Error checking ${contractName} contract:`, error);
     }
   };
 
@@ -386,6 +429,18 @@ const HomePage = () => {
         return;
       }
 
+      // Log contract details for debugging
+      await logContractDetails(scusdAddress, "sCUSD");
+      await logContractDetails(cusdAddress, "CUSD");
+
+      // Check if sCUSD contract has the expected functions
+      const hasContractFunctions = await checkContractFunctions(scusdAddress, sCUSDJson.abi);
+      if (!hasContractFunctions) {
+        showSCUSDNotification("sCUSD contract not properly deployed or has different interface", "error");
+        setSCUSDLoading(false);
+        return;
+      }
+
       // First approve CUSD
       const { request: approveRequest } = await publicClient.simulateContract({
         address: cusdAddress as `0x${string}`,
@@ -398,25 +453,81 @@ const HomePage = () => {
       const approveHash = await walletClient.writeContract(approveRequest);
       await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
-      // Deposit assets
-      const { request: depositRequest } = await publicClient.simulateContract({
-        address: scusdAddress as `0x${string}`,
-        abi: sCUSDJson.abi,
-        functionName: "deposit",
-        args: [parseUnits(sCUSDAmount, 18), address],
-        account: address,
-      });
+      // Try to deposit assets using the deposit function first
+      try {
+        console.log("Attempting to use deposit function...");
+        const { request: depositRequest } = await publicClient.simulateContract({
+          address: scusdAddress as `0x${string}`,
+          abi: sCUSDJson.abi,
+          functionName: "deposit",
+          args: [parseUnits(sCUSDAmount, 18), address],
+          account: address,
+        });
 
-      const depositHash = await walletClient.writeContract(depositRequest);
-      await publicClient.waitForTransactionReceipt({ hash: depositHash });
+        const depositHash = await walletClient.writeContract(depositRequest);
+        await publicClient.waitForTransactionReceipt({ hash: depositHash });
+        console.log("Deposit function succeeded");
+      } catch (depositError) {
+        console.log("Deposit function failed, trying mint function...", depositError);
+
+        try {
+          // If deposit fails, try using mint function instead
+          // First, calculate how many shares we would get for the assets
+          const sharesToMint = (await publicClient.readContract({
+            address: scusdAddress as `0x${string}`,
+            abi: sCUSDJson.abi,
+            functionName: "previewDeposit",
+            args: [parseUnits(sCUSDAmount, 18)],
+          })) as bigint;
+
+          console.log("Calculated shares to mint:", sharesToMint.toString());
+
+          const { request: mintRequest } = await publicClient.simulateContract({
+            address: scusdAddress as `0x${string}`,
+            abi: sCUSDJson.abi,
+            functionName: "mint",
+            args: [sharesToMint, address],
+            account: address,
+          });
+
+          const mintHash = await walletClient.writeContract(mintRequest);
+          await publicClient.waitForTransactionReceipt({ hash: mintHash });
+          console.log("Mint function succeeded");
+        } catch (mintError) {
+          console.log("Mint function also failed:", mintError);
+
+          // If both fail, try a direct transfer approach (fallback)
+          try {
+            console.log("Trying direct transfer approach...");
+            const { request: transferRequest } = await publicClient.simulateContract({
+              address: cusdAddress as `0x${string}`,
+              abi: CUSDJson.abi,
+              functionName: "transfer",
+              args: [scusdAddress, parseUnits(sCUSDAmount, 18)],
+              account: address,
+            });
+
+            const transferHash = await walletClient.writeContract(transferRequest);
+            await publicClient.waitForTransactionReceipt({ hash: transferHash });
+            console.log("Direct transfer succeeded");
+          } catch (transferError) {
+            console.log("All deposit methods failed:", transferError);
+            throw new Error("All deposit methods failed. Please check contract deployment and try again.");
+          }
+        }
+      }
 
       fetchSCUSDVaultData();
       setSCUSDAmount("");
       showSCUSDNotification(`Successfully deposited ${sCUSDAmount} CUSD`, "success");
     } catch (error: unknown) {
       console.error("Error depositing:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to deposit";
+      const networkName = getCurrentNetworkName();
+      const scusdAddress = getContractAddress("sCUSD", chainId);
+
       showSCUSDNotification(
-        error instanceof Error ? error.message : "Failed to deposit",
+        `Deposit failed on ${networkName}. Contract: ${scusdAddress}. Error: ${errorMessage}`,
         "error"
       );
     } finally {
@@ -1142,9 +1253,9 @@ const HomePage = () => {
                     </div>
                   ) : (
                     <>
-                      {/* stCORE Mint Button */}
+                      {/* stCORE Mint Button - Above Main Content */}
                       <div className="mb-6">
-                        <div className="bg-black border border-gray-800 p-4 rounded-lg">
+                        <div className="bg-black border border-gray-800 p-4 rounded-lg shadow-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-gray-300 mb-1">
@@ -1161,7 +1272,7 @@ const HomePage = () => {
                             <button
                               onClick={handlestCOREMint}
                               disabled={stCORELoading}
-                              className={`px-4 py-2 rounded-md text-white font-medium transition-colors ${stCORELoading ? "opacity-70" : ""
+                              className={`px-6 py-3 rounded-md text-white font-medium transition-colors ${stCORELoading ? "opacity-70" : ""
                                 } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
                             >
                               {stCORELoading ? "Processing..." : "Mint 10 stCORE"}
@@ -1170,10 +1281,10 @@ const HomePage = () => {
                         </div>
                       </div>
 
-                      {/* Main Restaking Interface */}
-                      <div className="bg-black border border-gray-800 p-4 rounded-lg mb-4">
+                      {/* Main Content */}
+                      <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
                         {/* Tabs */}
-                        <div className="flex mb-4 border-b border-gray-800">
+                        <div className="flex mb-6 border-b border-gray-800">
                           <button
                             onClick={() => setActiveTab("delegate")}
                             className={`py-2 px-4 ${activeTab === "delegate"
@@ -1195,21 +1306,21 @@ const HomePage = () => {
                         </div>
 
                         {/* Balance Display */}
-                        <div className="mb-4 p-3 bg-gray-900 bg-opacity-50 rounded-lg">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-gray-400 text-sm">Your stCORE Balance</span>
-                            <span className="text-lg font-semibold">{stCOREBalance} stCORE</span>
+                        <div className="mb-6 p-4 bg-gray-900 bg-opacity-50 rounded-lg">
+                          <div className="flex justify-between items-center mb-3">
+                            <span className="text-gray-400">Your stCORE Balance</span>
+                            <span className="text-xl font-semibold">{stCOREBalance} stCORE</span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-gray-400 text-sm">Delegated stCORE</span>
-                            <span className="text-lg font-semibold">
+                            <span className="text-gray-400">Delegated stCORE</span>
+                            <span className="text-xl font-semibold">
                               {delegatedAmount} stCORE
                             </span>
                           </div>
                         </div>
 
                         {/* Input Form */}
-                        <div className="mb-4">
+                        <div className="mb-6">
                           <label className="block text-sm font-medium text-[#FF8C00] mb-1">
                             {activeTab === "delegate"
                               ? "Amount to Delegate"
@@ -1252,17 +1363,17 @@ const HomePage = () => {
                         </div>
                       </div>
 
-                      {/* About Restaking */}
-                      <div className="bg-black border border-gray-800 p-4 rounded-lg">
-                        <h3 className="text-lg font-semibold mb-2 text-[#FF8C00]">
+                      {/* Additional Info - with plain background */}
+                      <div className="mt-8 bg-black border border-gray-800 p-4 rounded-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
+                        <h2 className="text-lg font-semibold mb-2 text-[#FF8C00]">
                           About Restaking
-                        </h3>
-                        <p className="text-gray-300 mb-2 text-sm">
+                        </h2>
+                        <p className="text-gray-300 mb-2">
                           Restaking allows you to earn rewards by providing security to the
                           network. Your delegated tokens help secure multiple blockchain
                           protocols simultaneously.
                         </p>
-                        <p className="text-gray-300 text-sm">
+                        <p className="text-gray-300">
                           When you delegate your stCORE tokens to an operator, they can use your
                           stake to validate transactions across different networks, increasing
                           your potential rewards.
@@ -1327,6 +1438,10 @@ const HomePage = () => {
                         <div className="mb-4 p-3 bg-gray-900 bg-opacity-50 rounded-lg">
                           <div className="flex justify-between items-center mb-2">
                             <span className="text-gray-400 text-sm">Your CUSD Balance</span>
+                            <span className="text-lg font-semibold">{CUSDBalance} CUSD</span>
+                          </div>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-gray-400 text-sm">Your Vault Balance</span>
                             <span className="text-lg font-semibold">{sCUSDBalance} CUSD</span>
                           </div>
                           <div className="flex justify-between items-center mb-2">

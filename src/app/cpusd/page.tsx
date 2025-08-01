@@ -13,6 +13,7 @@ const SCUSDPage = () => {
   const [USBDBalance, setUSBDBalance] = useState("0");
   const [sCUSDBalance, setSCUSDBalance] = useState("0");
   const [shareBalance, setShareBalance] = useState("0");
+  const [vaultBalance, setVaultBalance] = useState("0");
   const [conversionRate, setConversionRate] = useState("1");
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState({
@@ -47,6 +48,19 @@ const SCUSDPage = () => {
         args: [address],
       })) as bigint;
       setShareBalance(formatUnits(shareBalanceData, 18));
+
+      // Convert shares to assets to get the user's vault balance in CUSD
+      if (shareBalanceData > BigInt(0)) {
+        const vaultBalanceData = (await publicClient.readContract({
+          address: ContractAddresses.sCUSD as `0x${string}`,
+          abi: sCUSDJson.abi,
+          functionName: "convertToAssets",
+          args: [shareBalanceData],
+        })) as bigint;
+        setVaultBalance(formatUnits(vaultBalanceData, 18));
+      } else {
+        setVaultBalance("0");
+      }
 
       // Get total assets and shares to calculate conversion rate
       const totalAssets = (await publicClient.readContract({
@@ -239,11 +253,10 @@ const SCUSDPage = () => {
 
         {notification.show && (
           <div
-            className={`mb-4 p-3 rounded-md ${
-              notification.type === "error"
+            className={`mb-4 p-3 rounded-md ${notification.type === "error"
                 ? "bg-red-900 bg-opacity-50 text-red-200"
                 : "bg-green-900 bg-opacity-50 text-green-200"
-            }`}
+              }`}
           >
             {notification.message}
           </div>
@@ -254,21 +267,19 @@ const SCUSDPage = () => {
           <div className="flex mb-6 border-b border-gray-800">
             <button
               onClick={() => setActiveTab("deposit")}
-              className={`py-2 px-4 ${
-                activeTab === "deposit"
+              className={`py-2 px-4 ${activeTab === "deposit"
                   ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
                   : "text-gray-400"
-              }`}
+                }`}
             >
               Deposit
             </button>
             <button
               onClick={() => setActiveTab("withdraw")}
-              className={`py-2 px-4 ${
-                activeTab === "withdraw"
+              className={`py-2 px-4 ${activeTab === "withdraw"
                   ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
                   : "text-gray-400"
-              }`}
+                }`}
             >
               Withdraw
             </button>
@@ -286,6 +297,12 @@ const SCUSDPage = () => {
               Your sCUSD Balance:{" "}
               <span className="text-[#FF8C00] font-bold">
                 {formatNumber(shareBalance)} sCUSD
+              </span>
+            </p>
+            <p className="text-gray-300 mb-2">
+              Your Vault Balance:{" "}
+              <span className="text-[#FF8C00] font-bold">
+                {formatNumber(vaultBalance)} CUSD
               </span>
             </p>
             <p className="text-gray-300 mb-4">
@@ -324,15 +341,14 @@ const SCUSDPage = () => {
           <button
             onClick={activeTab === "deposit" ? handleDeposit : handleWithdraw}
             disabled={loading || !amount}
-            className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${
-              loading ? "opacity-70" : ""
-            } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+            className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${loading ? "opacity-70" : ""
+              } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
           >
             {loading
               ? "Processing..."
               : activeTab === "deposit"
-              ? "Deposit CUSD"
-              : "Withdraw CUSD"}
+                ? "Deposit CUSD"
+                : "Withdraw CUSD"}
           </button>
         </div>
 
