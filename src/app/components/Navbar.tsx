@@ -3,8 +3,28 @@
 import React from "react";
 import Link from "next/link";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useChainId, useSwitchChain } from "wagmi";
+import { supportedChains } from "../../config";
 
 const Navbar = () => {
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
+
+  const handleNetworkSwitch = (targetChainId: number) => {
+    if (chainId !== targetChainId) {
+      switchChain({ chainId: targetChainId });
+    }
+  };
+
+  const getCurrentNetworkName = () => {
+    if (chainId === supportedChains.coreTestnet2.id) {
+      return "Core Testnet2";
+    } else if (chainId === supportedChains.hardhat.id) {
+      return "Hardhat";
+    }
+    return "Unknown Network";
+  };
+
   return (
     <nav className="bg-black text-white p-8">
       <div className="container mx-auto flex justify-between items-center">
@@ -43,13 +63,13 @@ const Navbar = () => {
           >
             SCUSD
           </Link>
-          {/* <Link
-            href="/USBD"
+          <Link
+            href="/usdc"
             className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
             USBD
           </Link>
-          <Link
+          {/* <Link
             href="/stCORE"
             className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
@@ -57,7 +77,32 @@ const Navbar = () => {
           </Link> */}
         </div>
 
-        <div className="flex items-center">
+        <div className="flex items-center space-x-4">
+          {/* Network Switcher */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-300">Network:</span>
+            <div className="flex space-x-1">
+              <button
+                onClick={() => handleNetworkSwitch(supportedChains.hardhat.id)}
+                className={`px-2 py-1 text-xs rounded ${chainId === supportedChains.hardhat.id
+                  ? "bg-[#FF8C00] text-black"
+                  : "bg-gray-700 text-white hover:bg-gray-600"
+                  } transition-colors`}
+              >
+                Hardhat
+              </button>
+              <button
+                onClick={() => handleNetworkSwitch(supportedChains.coreTestnet2.id)}
+                className={`px-2 py-1 text-xs rounded ${chainId === supportedChains.coreTestnet2.id
+                  ? "bg-[#FF8C00] text-black"
+                  : "bg-gray-700 text-white hover:bg-gray-600"
+                  } transition-colors`}
+              >
+                Core Testnet2
+              </button>
+            </div>
+          </div>
+
           <ConnectButton />
         </div>
 

@@ -77,13 +77,13 @@ export const contractAddresses: {
     LoanManager: '0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6',
   },
   coreTestnet2: {
-    USBD: '0x8182BEF887361F3312D344e229160C389616b6F0',
-    stCORE: '0xBB6f0beF915a4baaF6818c11BFeb648041f70959',
-    CUSD: '0x61edDE0E4B97D878C14F5f5706309d4572550Afa',
-    sCUSD: '0xe1Fd27F4390DcBE165f4D60DBF821e4B9Bb02dEd',
-    Operator: '0xc582Bc0317dbb0908203541971a358c44b1F3766',
-    Eigen: '0xB377a2EeD7566Ac9fCb0BA673604F9BF875e2Bab',
-    LoanManager: '0x66F625B8c4c635af8b74ECe2d7eD0D58b4af3C3d'
+    USBD: '0x9155497EAE31D432C0b13dBCc0615a37f55a2c87',
+    stCORE: '0xfB12F7170FF298CDed84C793dAb9aBBEcc01E798',
+    CUSD: '0xc1EeD9232A0A44c2463ACB83698c162966FBc78d',
+    sCUSD: '0xC220Ed128102d888af857d137a54b9B7573A41b2',
+    Operator: '0xfaE849108F2A63Abe3BaB17E21Be077d07e7a9A2',
+    Eigen: '0xce830DA8667097BB491A70da268b76a081211814',
+    LoanManager: '0xD5bFeBDce5c91413E41cc7B24C8402c59A344f7c'
   }
 };
 
@@ -96,12 +96,12 @@ export const getContractAddress = (
   if (chainId === supportedChains.coreTestnet2.id) {
     return contractAddresses.coreTestnet2[contractName];
   }
-  
+
   // Hardhat
   if (chainId === supportedChains.hardhat.id) {
     return contractAddresses.hardhat[contractName];
   }
-  
+
   return '0x0000000000000000000000000000000000000000';
 };
 
@@ -120,11 +120,11 @@ export const getRpcUrl = (chainId: number): string => {
   if (chainId === supportedChains.coreTestnet2.id) {
     return supportedChains.coreTestnet2.rpcUrls.default.http[0];
   }
-  
+
   if (chainId === supportedChains.hardhat.id) {
     return supportedChains.hardhat.rpcUrls.default.http[0];
   }
-  
+
   // Default to Core Testnet2
   return supportedChains.coreTestnet2.rpcUrls.default.http[0];
 };
@@ -134,11 +134,11 @@ export const getExplorerUrl = (chainId: number): string => {
   if (chainId === supportedChains.coreTestnet2.id) {
     return supportedChains.coreTestnet2.blockExplorers.default.url;
   }
-  
+
   if (chainId === supportedChains.hardhat.id) {
     return '';
   }
-  
+
   // Default to Core Testnet2
   return supportedChains.coreTestnet2.blockExplorers.default.url;
 };
@@ -160,7 +160,7 @@ export const getAddressUrl = (chainId: number, address: string): string => {
 // Add more configuration options as needed
 
 // Add to wagmi config
-export const chains = [supportedChains.coreTestnet2, supportedChains.hardhat];
+export const chains = [supportedChains.coreTestnet2, supportedChains.hardhat] as const;
 
 // Add timeout and retry configuration
 export const rpcConfig = {

@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAccount, usePublicClient, useWalletClient } from "wagmi";
+import { useAccount, usePublicClient, useWalletClient, useChainId } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
-import USBDJson from "@/contracts/USBD/USBD.json";
+import USBDJson from "@/contracts/USBD.sol/USBD.json";
 import CUSDJson from "@/contracts/CUSD.sol/CUSD.json";
-import ContractAddresses from "../../deployed-address.json";
+import { getContractAddress, supportedChains } from "../../config";
 
 const MintPage = () => {
   const [amount, setAmount] = useState("");
@@ -21,42 +21,64 @@ const MintPage = () => {
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
+  const chainId = useChainId();
 
   // Fetch balances
   const fetchBalances = async () => {
     if (!address || !publicClient) return;
 
     try {
-      // Fetch USBD balance
-      const USBDBalanceData = await publicClient.readContract({
-        address: ContractAddresses.USBD as `0x${string}`,
-        abi: USBDJson.abi,
-        functionName: "balanceOf",
-        args: [address],
-      });
+      // Get contract addresses for current network
+      const usbdAddress = getContractAddress("USBD", chainId);
+      const cusdAddress = getContractAddress("CUSD", chainId);
 
-      setUSBDBalance(formatUnits(USBDBalanceData as bigint, 18)); // USBD has 18 decimals
+      // Fetch USBD balance
+      if (usbdAddress !== '0x0000000000000000000000000000000000000000') {
+        const USBDBalanceData = await publicClient.readContract({
+          address: usbdAddress as `0x${string}`,
+          abi: USBDJson.abi,
+          functionName: "balanceOf",
+          args: [address],
+        });
+
+        setUSBDBalance(formatUnits(USBDBalanceData as bigint, 18)); // USBD has 18 decimals
+      } else {
+        setUSBDBalance("0");
+      }
 
       // Fetch CUSD balance
-      const CUSDBalanceData = await publicClient.readContract({
-        address: ContractAddresses.CUSD as `0x${string}`,
-        abi: CUSDJson.abi,
-        functionName: "balanceOf",
-        args: [address],
-      });
+      if (cusdAddress !== '0x0000000000000000000000000000000000000000') {
+        const CUSDBalanceData = await publicClient.readContract({
+          address: cusdAddress as `0x${string}`,
+          abi: CUSDJson.abi,
+          functionName: "balanceOf",
+          args: [address],
+        });
 
-      setCUSDBalance(formatUnits(CUSDBalanceData as bigint, 18)); // CUSD has 18 decimals
+        setCUSDBalance(formatUnits(CUSDBalanceData as bigint, 18)); // CUSD has 18 decimals
+      } else {
+        setCUSDBalance("0");
+      }
     } catch (err) {
       console.error("Error fetching balances:", err);
+      setUSBDBalance("0");
+      setCUSDBalance("0");
     }
   };
 
-  // Fetch balances on mount and when address changes
+  // Fetch balances on mount and when address, chainId, or publicClient changes
   useEffect(() => {
     if (isConnected && address && publicClient) {
       fetchBalances();
+
+      // Set up polling for balance updates
+      const interval = setInterval(() => {
+        fetchBalances();
+      }, 5000); // Poll every 5 seconds
+
+      return () => clearInterval(interval);
     }
-  }, [address, isConnected, publicClient]);
+  }, [address, isConnected, publicClient, chainId]);
 
   // Handle input change for CUSD
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,9 +106,17 @@ const MintPage = () => {
       // Convert 10 USBD to units (18 decimals)
       const USBDAmountUnits = parseUnits("10", 18);
 
+      // Get USBD contract address for current network
+      const usbdAddress = getContractAddress("USBD", chainId);
+      if (usbdAddress === '0x0000000000000000000000000000000000000000') {
+        setUSBDError("USBD contract not available on current network");
+        setUSBDLoading(false);
+        return;
+      }
+
       // Prepare the mint transaction
       const { request } = await publicClient.simulateContract({
-        address: ContractAddresses.USBD as `0x${string}`,
+        address: usbdAddress as `0x${string}`,
         abi: USBDJson.abi,
         functionName: "mint",
         args: [USBDAmountUnits],
@@ -131,6 +161,17 @@ const MintPage = () => {
     setSuccess("");
 
     try {
+      // Get contract addresses for current network
+      const usbdAddress = getContractAddress("USBD", chainId);
+      const cusdAddress = getContractAddress("CUSD", chainId);
+
+      if (usbdAddress === '0x0000000000000000000000000000000000000000' ||
+        cusdAddress === '0x0000000000000000000000000000000000000000') {
+        setError("Contracts not available on current network");
+        setLoading(false);
+        return;
+      }
+
       // First approve USBD spending
       const USBDAmount = parseUnits(amount, 18); // USBD has 18 decimals
 
@@ -143,10 +184,10 @@ const MintPage = () => {
 
       // Approve USBD
       const { request: approveRequest } = await publicClient.simulateContract({
-        address: ContractAddresses.USBD as `0x${string}`,
+        address: usbdAddress as `0x${string}`,
         abi: USBDJson.abi,
         functionName: "approve",
-        args: [ContractAddresses.CUSD as `0x${string}`, USBDAmount],
+        args: [cusdAddress as `0x${string}`, USBDAmount],
         account: address,
       });
 
@@ -155,7 +196,7 @@ const MintPage = () => {
 
       // Now call depositAndMint on CUSD contract
       const { request: mintRequest } = await publicClient.simulateContract({
-        address: ContractAddresses.CUSD as `0x${string}`,
+        address: cusdAddress as `0x${string}`,
         abi: CUSDJson.abi,
         functionName: "depositAndMint",
         args: [USBDAmount],
@@ -181,6 +222,16 @@ const MintPage = () => {
     }
   };
 
+  // Get current network name
+  const getCurrentNetworkName = () => {
+    if (chainId === supportedChains.coreTestnet2.id) {
+      return "Core Testnet2";
+    } else if (chainId === supportedChains.hardhat.id) {
+      return "Hardhat";
+    }
+    return "Unknown Network";
+  };
+
   return (
     <div className="min-h-screen bg-black text-white p-6">
       <div className="max-w-6xl mx-auto">
@@ -195,6 +246,13 @@ const MintPage = () => {
         >
           MINT STABLECOINS
         </h1>
+
+        {/* Network Indicator */}
+        <div className="text-center mb-4">
+          <p className="text-gray-300">
+            Network: <span className="text-[#FF8C00] font-bold">{getCurrentNetworkName()}</span>
+          </p>
+        </div>
 
         {!isConnected ? (
           <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg mb-6 backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
@@ -219,13 +277,12 @@ const MintPage = () => {
                       Need USBD to mint CUSD? Get 10 USBD for testing
                     </p>
                   </div>
-                  
+
                   <button
                     onClick={handleUSBDMint}
                     disabled={USBDLoading}
-                    className={`px-6 py-3 rounded-md text-white font-medium transition-colors ${
-                      USBDLoading ? "opacity-70" : ""
-                    } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+                    className={`px-6 py-3 rounded-md text-white font-medium transition-colors ${USBDLoading ? "opacity-70" : ""
+                      } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
                   >
                     {USBDLoading ? "Processing..." : "Mint 10 USBD"}
                   </button>
@@ -247,7 +304,7 @@ const MintPage = () => {
                 <h2 className="text-2xl font-bold mb-4 text-[#FF8C00] font-mono">
                   MINT CUSD
                 </h2>
-                
+
                 <div className="mb-4">
                   <p className="text-gray-300 mb-2">
                     Your USBD Balance:{" "}
@@ -308,9 +365,8 @@ const MintPage = () => {
                 <button
                   onClick={handleMint}
                   disabled={loading || !amount}
-                  className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${
-                    loading ? "opacity-70" : ""
-                  } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+                  className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${loading ? "opacity-70" : ""
+                    } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
                 >
                   {loading ? "Processing..." : "Mint CUSD"}
                 </button>

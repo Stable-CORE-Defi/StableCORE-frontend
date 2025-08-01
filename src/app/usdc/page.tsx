@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useAccount, usePublicClient, useWalletClient } from "wagmi";
+import { useAccount, usePublicClient, useWalletClient, useChainId } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 
-import USBDJson from "@/contracts/USBD/USBD.json";
+import USBDJson from "@/contracts/USBD.sol/USBD.json";
+import { getContractAddress, supportedChains } from "../../config";
 import ContractAddresses from "../../deployed-address.json";
 
 const USBDMint = () => {
@@ -13,37 +14,85 @@ const USBDMint = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [txHash, setTxHash] = useState("");
+  const [balanceLoading, setBalanceLoading] = useState(false);
 
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
+  const chainId = useChainId();
+
+  // Get the correct contract address for the current network
+  const getUSBDAddress = () => {
+    const dynamicAddress = getContractAddress("USBD", chainId);
+    console.log("Dynamic USBD address:", dynamicAddress);
+
+    // Fallback to deployed-address.json if dynamic address is zero
+    if (dynamicAddress === '0x0000000000000000000000000000000000000000') {
+      console.log("Using fallback address from deployed-address.json");
+      return ContractAddresses.USBD;
+    }
+
+    return dynamicAddress;
+  };
 
   // Fetch balance
   const fetchBalance = async () => {
-    if (!address || !publicClient) return;
+    if (!address || !publicClient) {
+      console.log("Missing address or publicClient:", { address, publicClient });
+      return;
+    }
 
+    setBalanceLoading(true);
     try {
+      const usbdAddress = getUSBDAddress();
+      console.log("Current chainId:", chainId);
+      console.log("USBD Address for current network:", usbdAddress);
+      console.log("User address:", address);
+
+      if (usbdAddress === '0x0000000000000000000000000000000000000000') {
+        console.warn("USBD contract not found for current network");
+        setBalance("0");
+        return;
+      }
+
+      console.log("Attempting to read USBD balance...");
       const balanceData = await publicClient.readContract({
-        address: ContractAddresses.USBD as `0x${string}`,
+        address: usbdAddress as `0x${string}`,
         abi: USBDJson.abi,
         functionName: "balanceOf",
         args: [address],
       });
 
-      setBalance(formatUnits(balanceData as bigint, 18)); // USBD has 18 decimals
+      console.log("Raw balance data:", balanceData);
+      const formattedBalance = formatUnits(balanceData as bigint, 18);
+      console.log("Formatted balance:", formattedBalance);
+      setBalance(formattedBalance);
     } catch (err) {
       console.error("Error fetching balance:", err);
+      setBalance("0");
+    } finally {
+      setBalanceLoading(false);
     }
   };
 
-  // Fetch balance on mount and when address changes
+  // Fetch balance on mount and when address, chainId, or publicClient changes
   useEffect(() => {
     if (isConnected && address && publicClient) {
+      console.log("useEffect triggered - fetching balance");
       fetchBalance();
-    }
-  }, [address, isConnected, publicClient]);
 
- 
+      // Set up polling for balance updates
+      const interval = setInterval(() => {
+        console.log("Polling balance update...");
+        fetchBalance();
+      }, 5000); // Poll every 5 seconds
+
+      return () => clearInterval(interval);
+    } else {
+      console.log("useEffect conditions not met:", { isConnected, address: !!address, publicClient: !!publicClient });
+    }
+  }, [address, isConnected, publicClient, chainId]);
 
   // Handle input change
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,6 +115,12 @@ const USBDMint = () => {
       return;
     }
 
+    const usbdAddress = getUSBDAddress();
+    if (usbdAddress === '0x0000000000000000000000000000000000000000') {
+      setError("USBD contract not available on current network");
+      return;
+    }
+
     setLoading(true);
     setError("");
     setSuccess("");
@@ -76,7 +131,7 @@ const USBDMint = () => {
 
       // Prepare the mint transaction
       const { request } = await publicClient.simulateContract({
-        address: ContractAddresses.USBD as `0x${string}`,
+        address: usbdAddress as `0x${string}`,
         abi: USBDJson.abi,
         functionName: "mint",
         args: [USBDAmount],
@@ -85,6 +140,7 @@ const USBDMint = () => {
 
       // Execute the transaction using the wallet's provider
       const hash = await walletClient.writeContract(request);
+      setTxHash(hash);
 
       // Wait for transaction to complete
       await publicClient.waitForTransactionReceipt({ hash });
@@ -92,9 +148,11 @@ const USBDMint = () => {
       // Update balance and reset form
       fetchBalance();
       setAmount("");
+      setTxHash("");
       setSuccess(`Successfully minted ${amount} USBD!`);
     } catch (err: unknown) {
       console.error("Error minting USBD:", err);
+      setTxHash("");
       setError(
         err instanceof Error
           ? err.message
@@ -103,6 +161,16 @@ const USBDMint = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Get current network name
+  const getCurrentNetworkName = () => {
+    if (chainId === supportedChains.coreTestnet2.id) {
+      return "Core Testnet2";
+    } else if (chainId === supportedChains.hardhat.id) {
+      return "Hardhat";
+    }
+    return "Unknown Network";
   };
 
   return (
@@ -131,11 +199,63 @@ const USBDMint = () => {
             <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg mb-6 backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
               <div className="mb-4">
                 <p className="text-gray-300 mb-2">
+                  Network: <span className="text-[#FF8C00] font-bold">{getCurrentNetworkName()}</span>
+                </p>
+                <p className="text-gray-300 mb-2">
+                  Chain ID: <span className="text-[#FF8C00] font-bold">{chainId}</span>
+                </p>
+                <p className="text-gray-300 mb-2">
+                  USBD Contract: <span className="text-[#FF8C00] font-bold text-xs">{getUSBDAddress()}</span>
+                </p>
+                <p className="text-gray-300 mb-2">
                   Your USBD Balance:{" "}
                   <span className="text-[#FF8C00] font-bold">
-                    {balance} USBD
+                    {balanceLoading ? "Loading..." : `${balance} USBD`}
                   </span>
                 </p>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={fetchBalance}
+                    className="text-sm text-[#FF8C00] hover:text-[#FFA500] underline"
+                  >
+                    Refresh Balance
+                  </button>
+                  <button
+                    onClick={() => {
+                      console.log("Manual balance check triggered");
+                      fetchBalance();
+                    }}
+                    className="text-sm text-blue-400 hover:text-blue-300 underline"
+                  >
+                    Debug Check
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!publicClient) {
+                        alert("Public client not available");
+                        return;
+                      }
+                      const usbdAddress = getUSBDAddress();
+                      console.log("Testing contract access for:", usbdAddress);
+                      try {
+                        const totalSupply = await publicClient.readContract({
+                          address: usbdAddress as `0x${string}`,
+                          abi: USBDJson.abi,
+                          functionName: "totalSupply",
+                          args: [],
+                        });
+                        console.log("Total supply:", totalSupply);
+                        alert(`Contract accessible! Total supply: ${formatUnits(totalSupply as bigint, 18)}`);
+                      } catch (err) {
+                        console.error("Contract test failed:", err);
+                        alert("Contract test failed - check console for details");
+                      }
+                    }}
+                    className="text-sm text-green-400 hover:text-green-300 underline"
+                  >
+                    Test Contract
+                  </button>
+                </div>
               </div>
 
               <div className="mb-6">
@@ -159,12 +279,18 @@ const USBDMint = () => {
               <button
                 onClick={handleMint}
                 disabled={loading || !amount}
-                className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${
-                  loading ? "opacity-70" : ""
-                } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+                className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${loading ? "opacity-70" : ""
+                  } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
               >
                 {loading ? "Processing..." : "Mint USBD"}
               </button>
+
+              {txHash && (
+                <div className="mt-2 p-2 bg-blue-900 border border-blue-700 rounded text-sm">
+                  <p className="text-blue-300">Transaction submitted:</p>
+                  <p className="text-blue-200 font-mono text-xs break-all">{txHash}</p>
+                </div>
+              )}
 
               {error && (
                 <p className="mt-2 text-red-400 text-sm">Error: {error}</p>

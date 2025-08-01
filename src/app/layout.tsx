@@ -3,7 +3,7 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import Navbar from './components/Navbar';
-import { rpcConfig } from '../config';
+import { rpcConfig, chains } from '../config';
 
 // Rainbow Kit imports
 import '@rainbow-me/rainbowkit/styles.css';
@@ -12,20 +12,18 @@ import {
   RainbowKitProvider,
 } from '@rainbow-me/rainbowkit';
 import { WagmiProvider } from 'wagmi';
-import { hardhat } from 'wagmi/chains';
 import {
   QueryClientProvider,
   QueryClient,
 } from "@tanstack/react-query";
-import { coreTestnet2 } from 'viem/chains';
 
 const inter = Inter({ subsets: ['latin'] });
 
-// Configure RainbowKit with our custom CORE chain
+// Configure RainbowKit with our custom chains
 const config = getDefaultConfig({
   appName: 'StableCORE',
   projectId: 'YOUR_PROJECT_ID',
-  chains: [hardhat , coreTestnet2],
+  chains: chains,
   ssr: true,
   pollingInterval: rpcConfig.pollingInterval,
 });

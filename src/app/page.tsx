@@ -2,17 +2,16 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAccount, usePublicClient, useWalletClient } from "wagmi";
+import { useAccount, usePublicClient, useWalletClient, useChainId } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 import StablecoinAnimation from "./components/StablecoinAnimation";
-import Link from "next/link";
 import Image from "next/image";
-import USBDJson from "@/contracts/USBD/USBD.json";
 import CUSDJson from "@/contracts/CUSD.sol/CUSD.json";
 import sCUSDJson from "@/contracts/sCUSD.sol/sCUSD.json";
-import stCOREJson from "@/contracts/stCORE/stCORE.json";
+import stCOREJson from "@/contracts/stCORE.sol/stCORE.json";
 import EigenJson from "@/contracts/Eigen.sol/Eigen.json";
-import ContractAddresses from "../deployed-address.json";
+import { getContractAddress, supportedChains } from "../config";
+import USBDJson from "@/contracts/USBD.sol/USBD.json";
 
 const HomePage = () => {
   const [selectedStep, setSelectedStep] = useState<string | null>(null);
@@ -55,6 +54,7 @@ const HomePage = () => {
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const { data: walletClient } = useWalletClient();
+  const chainId = useChainId();
 
   const devnetAddresses = {
     USBD: "0x9155497EAE31D432C0b13dBCc0615a37f55a2c87",
@@ -73,27 +73,51 @@ const HomePage = () => {
     if (!address || !publicClient) return;
 
     try {
-      // Fetch USBD balance
-      const USBDBalanceData = await publicClient.readContract({
-        address: ContractAddresses.USBD as `0x${string}`,
-        abi: USBDJson.abi,
-        functionName: "balanceOf",
-        args: [address],
-      });
+      console.log("Fetching balances for address:", address);
 
-      setUSBDBalance(formatUnits(USBDBalanceData as bigint, 18)); // USBD has 18 decimals
+      // Get contract addresses for current network
+      const usbdAddress = getContractAddress("USBD", chainId);
+      const cusdAddress = getContractAddress("CUSD", chainId);
+
+      console.log("USBD contract address:", usbdAddress);
+
+      // Fetch USBD balance
+      if (usbdAddress !== '0x0000000000000000000000000000000000000000') {
+        const USBDBalanceData = await publicClient.readContract({
+          address: usbdAddress as `0x${string}`,
+          abi: USBDJson.abi,
+          functionName: "balanceOf",
+          args: [address],
+        });
+
+        console.log("Raw USBD balance data:", USBDBalanceData);
+        const formattedBalance = formatUnits(USBDBalanceData as bigint, 18);
+        console.log("Formatted USBD balance:", formattedBalance);
+        setUSBDBalance(formattedBalance);
+      } else {
+        setUSBDBalance("0");
+      }
 
       // Fetch CUSD balance
-      const CUSDBalanceData = await publicClient.readContract({
-        address: ContractAddresses.CUSD as `0x${string}`,
-        abi: CUSDJson.abi,
-        functionName: "balanceOf",
-        args: [address],
-      });
+      if (cusdAddress !== '0x0000000000000000000000000000000000000000') {
+        const CUSDBalanceData = await publicClient.readContract({
+          address: cusdAddress as `0x${string}`,
+          abi: CUSDJson.abi,
+          functionName: "balanceOf",
+          args: [address],
+        });
 
-      setCUSDBalance(formatUnits(CUSDBalanceData as bigint, 18)); // CUSD has 18 decimals
+        console.log("Raw CUSD balance data:", CUSDBalanceData);
+        const formattedCUSDBalance = formatUnits(CUSDBalanceData as bigint, 18);
+        console.log("Formatted CUSD balance:", formattedCUSDBalance);
+        setCUSDBalance(formattedCUSDBalance);
+      } else {
+        setCUSDBalance("0");
+      }
     } catch (err) {
       console.error("Error fetching balances:", err);
+      // Set error state to show user there was an issue
+      setError("Failed to fetch balances. Please try refreshing.");
     }
   };
 
@@ -102,8 +126,16 @@ const HomePage = () => {
     if (isConnected && address && publicClient) {
       fetchBalances();
       fetchSCUSDVaultData();
+
+      // Set up polling for balance updates
+      const interval = setInterval(() => {
+        fetchBalances();
+        fetchSCUSDVaultData();
+      }, 5000); // Poll every 5 seconds
+
+      return () => clearInterval(interval);
     }
-  }, [address, isConnected, publicClient]);
+  }, [address, isConnected, publicClient, chainId]);
 
   // Handle input change for CUSD
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,34 +167,55 @@ const HomePage = () => {
     setUSBDSuccess("");
 
     try {
+      console.log("Starting USBD mint process...");
+      console.log("User address:", address);
+
+      // Get USBD contract address for current network
+      const usbdAddress = getContractAddress("USBD", chainId);
+      if (usbdAddress === '0x0000000000000000000000000000000000000000') {
+        setUSBDError("USBD contract not available on current network");
+        setUSBDLoading(false);
+        return;
+      }
+
+      console.log("USBD contract address:", usbdAddress);
+
       // Convert 10 USBD to units (18 decimals)
       const USBDAmountUnits = parseUnits("10", 18);
+      console.log("USBD amount in units:", USBDAmountUnits.toString());
 
       // Prepare the mint transaction
       const { request } = await publicClient.simulateContract({
-        address: ContractAddresses.USBD as `0x${string}`,
+        address: usbdAddress as `0x${string}`,
         abi: USBDJson.abi,
         functionName: "mint",
         args: [USBDAmountUnits],
         account: address,
       });
 
+      console.log("Transaction request prepared:", request);
+
       // Execute the transaction using the wallet's provider
       const hash = await walletClient.writeContract(request);
+      console.log("Transaction hash:", hash);
 
       // Wait for transaction to complete
-      await publicClient.waitForTransactionReceipt({ hash });
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      console.log("Transaction receipt:", receipt);
+
+      // Add a small delay to ensure the blockchain state is updated
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Update balance
-      fetchBalances();
+      console.log("Refreshing balances after mint...");
+      await fetchBalances();
+
       setUSBDSuccess("Successfully minted 10 USBD!");
+      console.log("USBD mint completed successfully");
     } catch (err: unknown) {
       console.error("Error minting USBD:", err);
-      setUSBDError(
-        err instanceof Error
-          ? err.message
-          : "Failed to mint USBD. Please try again."
-      );
+      const errorMessage = err instanceof Error ? err.message : "Failed to mint USBD. Please try again.";
+      setUSBDError(errorMessage);
     } finally {
       setUSBDLoading(false);
     }
@@ -185,6 +238,17 @@ const HomePage = () => {
     setSuccess("");
 
     try {
+      // Get contract addresses for current network
+      const usbdAddress = getContractAddress("USBD", chainId);
+      const cusdAddress = getContractAddress("CUSD", chainId);
+
+      if (usbdAddress === '0x0000000000000000000000000000000000000000' ||
+        cusdAddress === '0x0000000000000000000000000000000000000000') {
+        setError("Contracts not available on current network");
+        setLoading(false);
+        return;
+      }
+
       // First approve USBD spending
       const USBDAmount = parseUnits(amount, 18); // USBD has 18 decimals
 
@@ -197,10 +261,10 @@ const HomePage = () => {
 
       // Approve USBD
       const { request: approveRequest } = await publicClient.simulateContract({
-        address: ContractAddresses.USBD as `0x${string}`,
+        address: usbdAddress as `0x${string}`,
         abi: USBDJson.abi,
         functionName: "approve",
-        args: [ContractAddresses.CUSD as `0x${string}`, USBDAmount],
+        args: [cusdAddress as `0x${string}`, USBDAmount],
         account: address,
       });
 
@@ -209,7 +273,7 @@ const HomePage = () => {
 
       // Now call depositAndMint on CUSD contract
       const { request: mintRequest } = await publicClient.simulateContract({
-        address: ContractAddresses.CUSD as `0x${string}`,
+        address: cusdAddress as `0x${string}`,
         abi: CUSDJson.abi,
         functionName: "depositAndMint",
         args: [USBDAmount],
@@ -240,9 +304,18 @@ const HomePage = () => {
     if (!address || !publicClient) return;
 
     try {
+      // Get contract addresses for current network
+      const cusdAddress = getContractAddress("CUSD", chainId);
+      const scusdAddress = getContractAddress("sCUSD", chainId);
+
+      if (cusdAddress === '0x0000000000000000000000000000000000000000' ||
+        scusdAddress === '0x0000000000000000000000000000000000000000') {
+        return;
+      }
+
       // Fetch CUSD balance (asset)
       const CUSDBalanceData = (await publicClient.readContract({
-        address: ContractAddresses.CUSD as `0x${string}`,
+        address: cusdAddress as `0x${string}`,
         abi: CUSDJson.abi,
         functionName: "balanceOf",
         args: [address],
@@ -251,7 +324,7 @@ const HomePage = () => {
 
       // Fetch sCUSD balance (shares)
       const shareBalanceData = (await publicClient.readContract({
-        address: ContractAddresses.sCUSD as `0x${string}`,
+        address: scusdAddress as `0x${string}`,
         abi: sCUSDJson.abi,
         functionName: "balanceOf",
         args: [address],
@@ -260,13 +333,13 @@ const HomePage = () => {
 
       // Get total assets and shares to calculate conversion rate
       const totalAssets = (await publicClient.readContract({
-        address: ContractAddresses.sCUSD as `0x${string}`,
+        address: scusdAddress as `0x${string}`,
         abi: sCUSDJson.abi,
         functionName: "totalAssets",
         args: [],
       })) as bigint;
       const totalShares = (await publicClient.readContract({
-        address: ContractAddresses.sCUSD as `0x${string}`,
+        address: scusdAddress as `0x${string}`,
         abi: sCUSDJson.abi,
         functionName: "totalSupply",
         args: [],
@@ -302,12 +375,23 @@ const HomePage = () => {
 
     setSCUSDLoading(true);
     try {
+      // Get contract addresses for current network
+      const cusdAddress = getContractAddress("CUSD", chainId);
+      const scusdAddress = getContractAddress("sCUSD", chainId);
+
+      if (cusdAddress === '0x0000000000000000000000000000000000000000' ||
+        scusdAddress === '0x0000000000000000000000000000000000000000') {
+        showSCUSDNotification("Contracts not available on current network", "error");
+        setSCUSDLoading(false);
+        return;
+      }
+
       // First approve CUSD
       const { request: approveRequest } = await publicClient.simulateContract({
-        address: ContractAddresses.CUSD as `0x${string}`,
+        address: cusdAddress as `0x${string}`,
         abi: CUSDJson.abi,
         functionName: "approve",
-        args: [ContractAddresses.sCUSD, parseUnits(sCUSDAmount, 18)],
+        args: [scusdAddress, parseUnits(sCUSDAmount, 18)],
         account: address,
       });
 
@@ -316,7 +400,7 @@ const HomePage = () => {
 
       // Deposit assets
       const { request: depositRequest } = await publicClient.simulateContract({
-        address: ContractAddresses.sCUSD as `0x${string}`,
+        address: scusdAddress as `0x${string}`,
         abi: sCUSDJson.abi,
         functionName: "deposit",
         args: [parseUnits(sCUSDAmount, 18), address],
@@ -354,8 +438,17 @@ const HomePage = () => {
 
     setSCUSDLoading(true);
     try {
+      // Get contract addresses for current network
+      const scusdAddress = getContractAddress("sCUSD", chainId);
+
+      if (scusdAddress === '0x0000000000000000000000000000000000000000') {
+        showSCUSDNotification("Contracts not available on current network", "error");
+        setSCUSDLoading(false);
+        return;
+      }
+
       const { request } = await publicClient.simulateContract({
-        address: ContractAddresses.sCUSD as `0x${string}`,
+        address: scusdAddress as `0x${string}`,
         abi: sCUSDJson.abi,
         functionName: "redeem",
         args: [parseUnits(sCUSDAmount, 18), address, address],
@@ -388,8 +481,16 @@ const HomePage = () => {
     if (!address || !publicClient) return;
 
     try {
+      // Get contract addresses for current network
+      const stcoreAddress = getContractAddress("stCORE", chainId);
+      const eigenAddress = getContractAddress("Eigen", chainId);
+
+      if (stcoreAddress === '0x0000000000000000000000000000000000000000') {
+        return;
+      }
+
       const balanceData = await publicClient.readContract({
-        address: ContractAddresses.stCORE as `0x${string}`,
+        address: stcoreAddress as `0x${string}`,
         abi: stCOREJson.abi,
         functionName: "balanceOf",
         args: [address],
@@ -398,18 +499,20 @@ const HomePage = () => {
       setstCOREBalance(formatUnits(balanceData as bigint, 18));
 
       // Also fetch delegated amount
-      try {
-        const delegatedData = await publicClient.readContract({
-          address: ContractAddresses.Eigen as `0x${string}`,
-          abi: EigenJson.abi,
-          functionName: "getDelegatedAmount",
-          args: [address],
-        });
+      if (eigenAddress !== '0x0000000000000000000000000000000000000000') {
+        try {
+          const delegatedData = await publicClient.readContract({
+            address: eigenAddress as `0x${string}`,
+            abi: EigenJson.abi,
+            functionName: "getDelegatedAmount",
+            args: [address],
+          });
 
-        setDelegatedAmount(formatUnits(delegatedData as bigint, 18));
-      } catch (err) {
-        console.error("Error fetching delegated amount:", err);
-        // If this fails, we'll just show 0 delegated
+          setDelegatedAmount(formatUnits(delegatedData as bigint, 18));
+        } catch (err) {
+          console.error("Error fetching delegated amount:", err);
+          // If this fails, we'll just show 0 delegated
+        }
       }
     } catch (err) {
       console.error("Error fetching stCORE balance:", err);
@@ -420,8 +523,15 @@ const HomePage = () => {
   useEffect(() => {
     if (isConnected && address && publicClient) {
       fetchstCOREBalance();
+
+      // Set up polling for stCORE balance updates
+      const interval = setInterval(() => {
+        fetchstCOREBalance();
+      }, 5000); // Poll every 5 seconds
+
+      return () => clearInterval(interval);
     }
-  }, [address, isConnected, publicClient]);
+  }, [address, isConnected, publicClient, chainId]);
 
   // Handle stCORE amount input change
   const handlestCOREAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -458,12 +568,21 @@ const HomePage = () => {
 
     setstCORELoading(true);
     try {
+      // Get contract addresses for current network
+      const stcoreAddress = getContractAddress("stCORE", chainId);
+
+      if (stcoreAddress === '0x0000000000000000000000000000000000000000') {
+        showRestakingNotification("stCORE contract not available on current network", "error");
+        setstCORELoading(false);
+        return;
+      }
+
       // Convert 10 stCORE to units (18 decimals)
       const stCOREAmountUnits = parseUnits("10", 18);
 
       // Prepare the mint transaction
       const { request } = await publicClient.simulateContract({
-        address: ContractAddresses.stCORE as `0x${string}`,
+        address: stcoreAddress as `0x${string}`,
         abi: stCOREJson.abi,
         functionName: "mint",
         args: [stCOREAmountUnits],
@@ -504,8 +623,17 @@ const HomePage = () => {
 
     setRestakingLoading(true);
     try {
+      // Get contract addresses for current network
+      const eigenAddress = getContractAddress("Eigen", chainId);
+
+      if (eigenAddress === '0x0000000000000000000000000000000000000000') {
+        showRestakingNotification("Eigen contract not available on current network", "error");
+        setRestakingLoading(false);
+        return;
+      }
+
       const { request } = await publicClient.simulateContract({
-        address: ContractAddresses.Eigen as `0x${string}`,
+        address: eigenAddress as `0x${string}`,
         abi: EigenJson.abi,
         functionName: "addDelegation",
         args: [parseUnits(stCOREAmount, 18)],
@@ -531,6 +659,16 @@ const HomePage = () => {
     }
   };
 
+  // Get current network name
+  const getCurrentNetworkName = () => {
+    if (chainId === supportedChains.coreTestnet2.id) {
+      return "Core Testnet2";
+    } else if (chainId === supportedChains.hardhat.id) {
+      return "Hardhat";
+    }
+    return "Unknown Network";
+  };
+
   // Handle undelegate action (removeDelegation)
   const handleUndelegate = async () => {
     if (!stCOREAmount || parseFloat(stCOREAmount) <= 0) {
@@ -545,9 +683,18 @@ const HomePage = () => {
 
     setRestakingLoading(true);
     try {
+      // Get contract addresses for current network
+      const eigenAddress = getContractAddress("Eigen", chainId);
+
+      if (eigenAddress === '0x0000000000000000000000000000000000000000') {
+        showRestakingNotification("Eigen contract not available on current network", "error");
+        setRestakingLoading(false);
+        return;
+      }
+
       // Call removeDelegation with separate parameters
       const { request } = await publicClient.simulateContract({
-        address: ContractAddresses.Eigen as `0x${string}`,
+        address: eigenAddress as `0x${string}`,
         abi: EigenJson.abi,
         functionName: "removeDelegation",
         args: [parseUnits(stCOREAmount, 18)],
@@ -575,6 +722,15 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      {/* Network Indicator */}
+      <div className="container mx-auto px-4 pt-4">
+        <div className="text-center">
+          <p className="text-gray-300">
+            Network: <span className="text-[#FF8C00] font-bold">{getCurrentNetworkName()}</span>
+          </p>
+        </div>
+      </div>
+
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-20">
         <div className="flex flex-col md:flex-row items-center justify-between">
@@ -710,10 +866,10 @@ const HomePage = () => {
               <div className="relative">
                 {/* Vertical connecting line */}
                 <div className="absolute left-8 top-16 bottom-0 w-0.5 bg-gradient-to-b from-[#FF8C00] via-[#FF8C00] to-[#FF8C00] opacity-60"></div>
-                
+
                 <div className="space-y-12">
                   {/* Step 1 - Mint */}
-                  <div 
+                  <div
                     onClick={() => setSelectedStep("mint")}
                     className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative"
                   >
@@ -733,7 +889,7 @@ const HomePage = () => {
                   </div>
 
                   {/* Step 2 - CUSD */}
-                  <div 
+                  <div
                     onClick={() => setSelectedStep("cusd")}
                     className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative"
                   >
@@ -753,7 +909,7 @@ const HomePage = () => {
                   </div>
 
                   {/* Step 3 - Restaking */}
-                  <div 
+                  <div
                     onClick={() => setSelectedStep("restaking")}
                     className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative"
                   >
@@ -813,23 +969,31 @@ const HomePage = () => {
                         <div className="bg-black border border-gray-800 p-4 rounded-lg">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-gray-300 mb-1">
-                                Your USBD Balance:{" "}
-                                <span className="text-[#FF8C00] font-bold">
-                                  {USBDBalance} USBD
-                                </span>
-                              </p>
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="text-gray-300">
+                                  Your USBD Balance:{" "}
+                                  <span className="text-[#FF8C00] font-bold">
+                                    {USBDBalance} USBD
+                                  </span>
+                                </p>
+                                <button
+                                  onClick={fetchBalances}
+                                  className="text-xs bg-gray-700 px-2 py-1 rounded text-gray-300 hover:bg-gray-600"
+                                  title="Refresh balance"
+                                >
+                                  🔄
+                                </button>
+                              </div>
                               <p className="text-sm text-gray-400">
                                 Need USBD to mint CUSD? Get 10 USBD for testing
                               </p>
                             </div>
-                            
+
                             <button
                               onClick={handleUSBDMint}
                               disabled={USBDLoading}
-                              className={`px-4 py-2 rounded-md text-white font-medium transition-colors ${
-                                USBDLoading ? "opacity-70" : ""
-                              } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+                              className={`px-4 py-2 rounded-md text-white font-medium transition-colors ${USBDLoading ? "opacity-70" : ""
+                                } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
                             >
                               {USBDLoading ? "Processing..." : "Mint 10 USBD"}
                             </button>
@@ -850,14 +1014,23 @@ const HomePage = () => {
                         <h3 className="text-xl font-bold mb-4 text-[#FF8C00] font-mono">
                           MINT CUSD
                         </h3>
-                        
+
                         <div className="mb-4">
-                          <p className="text-gray-300 mb-2">
-                            Your USBD Balance:{" "}
-                            <span className="text-[#FF8C00] font-bold">
-                              {USBDBalance} USBD
-                            </span>
-                          </p>
+                          <div className="flex items-center gap-2 mb-2">
+                            <p className="text-gray-300">
+                              Your USBD Balance:{" "}
+                              <span className="text-[#FF8C00] font-bold">
+                                {USBDBalance} USBD
+                              </span>
+                            </p>
+                            <button
+                              onClick={fetchBalances}
+                              className="text-xs bg-gray-700 px-2 py-1 rounded text-gray-300 hover:bg-gray-600"
+                              title="Refresh balance"
+                            >
+                              🔄
+                            </button>
+                          </div>
                           <p className="text-gray-300 mb-4">
                             Your CUSD Balance:{" "}
                             <span className="text-[#FF8C00] font-bold">
@@ -911,9 +1084,8 @@ const HomePage = () => {
                         <button
                           onClick={handleMint}
                           disabled={loading || !amount}
-                          className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${
-                            loading ? "opacity-70" : ""
-                          } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+                          className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${loading ? "opacity-70" : ""
+                            } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
                         >
                           {loading ? "Processing..." : "Mint CUSD"}
                         </button>
@@ -953,11 +1125,10 @@ const HomePage = () => {
                   {/* Notification */}
                   {restakingNotification.show && (
                     <div
-                      className={`mb-4 p-3 rounded-md ${
-                        restakingNotification.type === "error"
-                          ? "bg-red-900 bg-opacity-50 text-red-200"
-                          : "bg-green-900 bg-opacity-50 text-green-200"
-                      }`}
+                      className={`mb-4 p-3 rounded-md ${restakingNotification.type === "error"
+                        ? "bg-red-900 bg-opacity-50 text-red-200"
+                        : "bg-green-900 bg-opacity-50 text-green-200"
+                        }`}
                     >
                       {restakingNotification.message}
                     </div>
@@ -986,13 +1157,12 @@ const HomePage = () => {
                                 Need stCORE to delegate? Get 10 stCORE for testing
                               </p>
                             </div>
-                            
+
                             <button
                               onClick={handlestCOREMint}
                               disabled={stCORELoading}
-                              className={`px-4 py-2 rounded-md text-white font-medium transition-colors ${
-                                stCORELoading ? "opacity-70" : ""
-                              } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+                              className={`px-4 py-2 rounded-md text-white font-medium transition-colors ${stCORELoading ? "opacity-70" : ""
+                                } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
                             >
                               {stCORELoading ? "Processing..." : "Mint 10 stCORE"}
                             </button>
@@ -1006,21 +1176,19 @@ const HomePage = () => {
                         <div className="flex mb-4 border-b border-gray-800">
                           <button
                             onClick={() => setActiveTab("delegate")}
-                            className={`py-2 px-4 ${
-                              activeTab === "delegate"
-                                ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
-                                : "text-gray-400"
-                            }`}
+                            className={`py-2 px-4 ${activeTab === "delegate"
+                              ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
+                              : "text-gray-400"
+                              }`}
                           >
                             Delegate
                           </button>
                           <button
                             onClick={() => setActiveTab("undelegate")}
-                            className={`py-2 px-4 ${
-                              activeTab === "undelegate"
-                                ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
-                                : "text-gray-400"
-                            }`}
+                            className={`py-2 px-4 ${activeTab === "undelegate"
+                              ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
+                              : "text-gray-400"
+                              }`}
                           >
                             Undelegate
                           </button>
@@ -1072,15 +1240,14 @@ const HomePage = () => {
                               activeTab === "delegate" ? handleDelegate : handleUndelegate
                             }
                             disabled={restakingLoading}
-                            className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${
-                              restakingLoading ? "opacity-70" : ""
-                            } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+                            className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${restakingLoading ? "opacity-70" : ""
+                              } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
                           >
                             {restakingLoading
                               ? "Processing..."
                               : activeTab === "delegate"
-                              ? "Delegate Tokens"
-                              : "Undelegate Tokens"}
+                                ? "Delegate Tokens"
+                                : "Undelegate Tokens"}
                           </button>
                         </div>
                       </div>
@@ -1115,11 +1282,10 @@ const HomePage = () => {
                   {/* Notification */}
                   {sCUSDNotification.show && (
                     <div
-                      className={`mb-4 p-3 rounded-md ${
-                        sCUSDNotification.type === "error"
-                          ? "bg-red-900 bg-opacity-50 text-red-200"
-                          : "bg-green-900 bg-opacity-50 text-green-200"
-                      }`}
+                      className={`mb-4 p-3 rounded-md ${sCUSDNotification.type === "error"
+                        ? "bg-red-900 bg-opacity-50 text-red-200"
+                        : "bg-green-900 bg-opacity-50 text-green-200"
+                        }`}
                     >
                       {sCUSDNotification.message}
                     </div>
@@ -1139,21 +1305,19 @@ const HomePage = () => {
                         <div className="flex mb-4 border-b border-gray-800">
                           <button
                             onClick={() => setSCUSDActiveTab("deposit")}
-                            className={`py-2 px-4 ${
-                              sCUSDActiveTab === "deposit"
-                                ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
-                                : "text-gray-400"
-                            }`}
+                            className={`py-2 px-4 ${sCUSDActiveTab === "deposit"
+                              ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
+                              : "text-gray-400"
+                              }`}
                           >
                             Deposit
                           </button>
                           <button
                             onClick={() => setSCUSDActiveTab("withdraw")}
-                            className={`py-2 px-4 ${
-                              sCUSDActiveTab === "withdraw"
-                                ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
-                                : "text-gray-400"
-                            }`}
+                            className={`py-2 px-4 ${sCUSDActiveTab === "withdraw"
+                              ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
+                              : "text-gray-400"
+                              }`}
                           >
                             Withdraw
                           </button>
@@ -1203,15 +1367,14 @@ const HomePage = () => {
                               sCUSDActiveTab === "deposit" ? handleSCUSDDeposit : handleSCUSDWithdraw
                             }
                             disabled={sCUSDLoading || !sCUSDAmount}
-                            className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${
-                              sCUSDLoading ? "opacity-70" : ""
-                            } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+                            className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${sCUSDLoading ? "opacity-70" : ""
+                              } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
                           >
                             {sCUSDLoading
                               ? "Processing..."
                               : sCUSDActiveTab === "deposit"
-                              ? "Deposit CUSD"
-                              : "Withdraw CUSD"}
+                                ? "Deposit CUSD"
+                                : "Withdraw CUSD"}
                           </button>
                         </div>
                       </div>
@@ -1383,7 +1546,7 @@ const HomePage = () => {
       >
         {/* Gray top line */}
         <div className="border-t border-gray-600"></div>
-        
+
         <div className="container mx-auto px-4 py-12">
           {/* Main Footer Content */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
@@ -1396,28 +1559,28 @@ const HomePage = () => {
               <div className="flex space-x-4">
                 <a href="#" className="text-white hover:text-[#FF8C00] transition-colors">
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z"/>
+                    <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
                   </svg>
                 </a>
                 <a href="#" className="text-white hover:text-[#FF8C00] transition-colors">
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.402.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.357-.629-2.746-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24.009 12.017 24.009c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641.001 12.017.001z"/>
+                    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.402.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.357-.629-2.746-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24.009 12.017 24.009c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641.001 12.017.001z" />
                   </svg>
                 </a>
                 <a href="#" className="text-white hover:text-[#FF8C00] transition-colors">
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                   </svg>
                 </a>
                 <a href="#" className="text-white hover:text-[#FF8C00] transition-colors">
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                   </svg>
                 </a>
               </div>
             </div>
 
-          
+
             {/* Resources */}
             <div>
               <h4 className="text-lg font-bold text-[#FF8C00] mb-4">Resources</h4>
@@ -1426,13 +1589,13 @@ const HomePage = () => {
 
                 <li><a href="#" className="text-white hover:text-[#FF8C00] transition-colors">Security</a></li>
                 <li><a href="#" className="text-white hover:text-[#FF8C00] transition-colors">Audit Reports</a></li>
-                
+
               </ul>
             </div>
           </div>
 
           {/* Stats Section */}
-        
+
 
           {/* Bottom Section */}
           <div className="border-t border-gray-600 pt-8">
