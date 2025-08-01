@@ -12,6 +12,17 @@ import stCOREJson from "@/contracts/stCORE.sol/stCORE.json";
 import EigenJson from "@/contracts/Eigen.sol/Eigen.json";
 import { getContractAddress, supportedChains } from "../config";
 import USBDJson from "@/contracts/USBD.sol/USBD.json";
+import LoanManagerJson from "@/contracts/LoanManager.sol/LoanManager.json";
+
+interface LoanContractResponse {
+  0: bigint; // amount
+  1: bigint; // interestRate
+  2: bigint; // startTime
+  3: bigint; // dueTime
+  4: boolean; // isRepaid
+  5: bigint; // collateralAmount
+  6: bigint; // loanedUSBDAmount
+}
 
 const HomePage = () => {
   const [selectedStep, setSelectedStep] = useState<string | null>(null);
@@ -50,6 +61,19 @@ const HomePage = () => {
     message: "",
     type: "",
   });
+
+  // Loan states
+  const [loanAmount, setLoanAmount] = useState("");
+  const [collateralAmount, setCollateralAmount] = useState("");
+  const [repayAmount, setRepayAmount] = useState("");
+  const [loanDetails, setLoanDetails] = useState<any>(null);
+  const [loanLoading, setLoanLoading] = useState(false);
+  const [loanNotification, setLoanNotification] = useState({
+    show: false,
+    message: "",
+    type: "",
+  });
+  const [loanActiveTab, setLoanActiveTab] = useState("take");
 
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
@@ -124,16 +148,20 @@ const HomePage = () => {
   // Fetch balances on mount and when address changes
   useEffect(() => {
     if (isConnected && address && publicClient) {
-      fetchBalances();
-      fetchSCUSDVaultData();
-
-      // Set up polling for balance updates
-      const interval = setInterval(() => {
-        fetchBalances();
+              fetchBalances();
         fetchSCUSDVaultData();
-      }, 5000); // Poll every 5 seconds
+        fetchActiveLoans();
+        fetchRepaymentAmount();
 
-      return () => clearInterval(interval);
+        // Set up polling for balance updates
+        const interval = setInterval(() => {
+          fetchBalances();
+          fetchSCUSDVaultData();
+          fetchActiveLoans();
+          fetchRepaymentAmount();
+        }, 5000); // Poll every 5 seconds
+
+        return () => clearInterval(interval);
     }
   }, [address, isConnected, publicClient, chainId]);
 
@@ -831,6 +859,182 @@ const HomePage = () => {
     }
   };
 
+  // Loan-related functions
+  const showLoanNotification = (message: string, type: string) => {
+    setLoanNotification({ show: true, message, type });
+    setTimeout(() => {
+      setLoanNotification({ show: false, message: "", type: "" });
+    }, 5000);
+  };
+
+  // Fetch active loan details
+  const fetchActiveLoans = async () => {
+    if (!address || !publicClient) return;
+
+    try {
+      const loanManagerAddress = getContractAddress("LoanManager", chainId);
+      if (loanManagerAddress === '0x0000000000000000000000000000000000000000') {
+        return;
+      }
+
+      const loanDetailsResponse = (await publicClient.readContract({
+        address: loanManagerAddress as `0x${string}`,
+        abi: LoanManagerJson.abi,
+        functionName: "getLoanDetails",
+        args: [],
+      })) as LoanContractResponse;
+
+      if (loanDetailsResponse) {
+        setLoanDetails({
+          amount: loanDetailsResponse[0] ? formatUnits(loanDetailsResponse[0], 18) : "0",
+          interestRate: loanDetailsResponse[1] ? Number(loanDetailsResponse[1]) / 100 : 0,
+          startTime: loanDetailsResponse[2] ? Number(loanDetailsResponse[2]) : 0,
+          dueTime: loanDetailsResponse[3] ? Number(loanDetailsResponse[3]) : 0,
+          isRepaid: loanDetailsResponse[4] || false,
+          collateralAmount: delegatedAmount,
+          loanedUSBDAmount: loanDetailsResponse[6] ? formatUnits(loanDetailsResponse[6], 18) : "0",
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching active loan:", err);
+    }
+  };
+
+  // Fetch repayment amount
+  const fetchRepaymentAmount = async () => {
+    if (!publicClient) return;
+
+    try {
+      const loanManagerAddress = getContractAddress("LoanManager", chainId);
+      if (loanManagerAddress === '0x0000000000000000000000000000000000000000') {
+        return;
+      }
+
+      const repaymentAmount = await publicClient.readContract({
+        address: loanManagerAddress as `0x${string}`,
+        abi: LoanManagerJson.abi,
+        functionName: "calculateRepaymentAmount",
+        args: [],
+      });
+
+      setRepayAmount(formatUnits(repaymentAmount as bigint, 18));
+    } catch (err) {
+      console.error("Error fetching repayment amount:", err);
+    }
+  };
+
+  // Handle loan amount change and calculate required collateral
+  const handleLoanAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLoanAmount(value);
+    setCollateralAmount(calculateCollateral(value));
+  };
+
+  // Calculate required collateral (stCORE) based on loan amount (USBD)
+  const calculateCollateral = (amount: string) => {
+    const loanValue = parseFloat(amount) || 0;
+    return (loanValue * 1.5).toFixed(2);
+  };
+
+  // Handle take loan action
+  const handleTakeLoan = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!loanAmount || parseFloat(loanAmount) <= 0) {
+      showLoanNotification("Please enter a valid loan amount", "error");
+      return;
+    }
+
+    if (!walletClient || !publicClient) {
+      showLoanNotification("Wallet not connected properly", "error");
+      return;
+    }
+
+    setLoanLoading(true);
+    try {
+      const loanManagerAddress = getContractAddress("LoanManager", chainId);
+      if (loanManagerAddress === '0x0000000000000000000000000000000000000000') {
+        showLoanNotification("LoanManager contract not available on current network", "error");
+        setLoanLoading(false);
+        return;
+      }
+
+      const loanAmountInWei = parseUnits(loanAmount, 18);
+
+      const { request } = await publicClient.simulateContract({
+        address: loanManagerAddress as `0x${string}`,
+        abi: LoanManagerJson.abi,
+        functionName: "createLoan",
+        args: [loanAmountInWei],
+        account: address,
+      });
+
+      const hash = await walletClient.writeContract(request);
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      fetchActiveLoans();
+      showLoanNotification(`Successfully created loan for ${loanAmount} USBD`, "success");
+      setLoanAmount("");
+      setCollateralAmount("");
+    } catch (error: unknown) {
+      console.error("Error creating loan:", error);
+      showLoanNotification(
+        error instanceof Error ? error.message : "Failed to create loan",
+        "error"
+      );
+    } finally {
+      setLoanLoading(false);
+    }
+  };
+
+  // Handle repay loan action
+  const handleRepayLoan = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!repayAmount || parseFloat(repayAmount) <= 0) {
+      showLoanNotification("Please enter a valid repayment amount", "error");
+      return;
+    }
+
+    if (!walletClient || !publicClient) {
+      showLoanNotification("Wallet not connected properly", "error");
+      return;
+    }
+
+    setLoanLoading(true);
+    try {
+      const loanManagerAddress = getContractAddress("LoanManager", chainId);
+      if (loanManagerAddress === '0x0000000000000000000000000000000000000000') {
+        showLoanNotification("LoanManager contract not available on current network", "error");
+        setLoanLoading(false);
+        return;
+      }
+
+      const { request } = await publicClient.simulateContract({
+        address: loanManagerAddress as `0x${string}`,
+        abi: LoanManagerJson.abi,
+        functionName: "repayLoan",
+        args: [],
+        account: address,
+      });
+
+      const hash = await walletClient.writeContract(request);
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      fetchActiveLoans();
+      showLoanNotification(`Successfully repaid loan`, "success");
+      setRepayAmount("");
+    } catch (error: unknown) {
+      console.error("Error repaying loan:", error);
+      showLoanNotification(
+        error instanceof Error ? error.message : "Failed to repay loan",
+        "error"
+      );
+    } finally {
+      setLoanLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Network Indicator */}
@@ -1040,7 +1244,10 @@ const HomePage = () => {
                   </div>
 
                   {/* Step 4 - Loan */}
-                  <div className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative">
+                  <div 
+                    className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative"
+                    onClick={() => setSelectedStep("loan")}
+                  >
                     <div className="flex-shrink-0 relative z-10">
                       <div className="w-16 h-16 rounded-lg border-2 border-gray-600 hover:border-[#FF8C00] transition-colors duration-300 flex items-center justify-center bg-black group-hover:bg-[#FF8C00] group-hover:text-black">
                         <span className="text-2xl font-bold text-white group-hover:text-black transition-colors">4</span>
@@ -1508,6 +1715,255 @@ const HomePage = () => {
                           increasing the value of each sCUSD share over time.
                         </p>
                       </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {selectedStep === "loan" && (
+                <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
+                  <h2 className="text-2xl font-bold mb-6 text-[#FF8C00] font-mono">
+                    LOAN MANAGEMENT
+                  </h2>
+
+                  {!isConnected ? (
+                    <div className="bg-black border border-gray-800 p-4 rounded-lg">
+                      <p className="text-center text-gray-300">
+                        Please connect your wallet to manage loans
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Loan Notification */}
+                      {loanNotification.show && (
+                        <div
+                          className={`mb-4 p-3 rounded-md ${loanNotification.type === "error"
+                            ? "bg-red-900 bg-opacity-50 text-red-200"
+                            : "bg-green-900 bg-opacity-50 text-green-200"
+                            }`}
+                        >
+                          {loanNotification.message}
+                        </div>
+                      )}
+
+                      {/* Tabs */}
+                      <div className="flex mb-6 border-b border-gray-800">
+                        <button
+                          onClick={() => setLoanActiveTab("take")}
+                          className={`py-2 px-4 ${loanActiveTab === "take"
+                            ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
+                            : "text-gray-400"
+                            }`}
+                        >
+                          Take Loan
+                        </button>
+                        <button
+                          onClick={() => setLoanActiveTab("repay")}
+                          className={`py-2 px-4 ${loanActiveTab === "repay"
+                            ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
+                            : "text-gray-400"
+                            }`}
+                        >
+                          Repay Loan
+                        </button>
+                      </div>
+
+                      {/* Take Loan Tab */}
+                      {loanActiveTab === "take" && (
+                        <div>
+                          {loanDetails &&
+                            !loanDetails.isRepaid &&
+                            parseFloat(loanDetails.amount) > 0 ? (
+                            <div className="mb-6 p-4 bg-red-900 bg-opacity-50 rounded-lg">
+                              <h3 className="text-xl font-semibold mb-4 text-red-200">
+                                Existing Active Loan
+                              </h3>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <p className="text-gray-400">Loan Amount</p>
+                                  <p className="font-medium">{loanDetails.amount} USBD</p>
+                                </div>
+                                <div>
+                                  <p className="text-gray-400">Delegated stCORE</p>
+                                  <p className="font-medium">
+                                    {loanDetails.collateralAmount} stCORE
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-gray-400">Due Date</p>
+                                  <p className="font-medium">
+                                    {new Date(
+                                      Number(loanDetails.dueTime) * 1000
+                                    ).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                <div>
+                                  <p className="text-gray-400">Status</p>
+                                  <p className="font-medium text-red-200">Active</p>
+                                </div>
+                              </div>
+                              <p className="mt-4 text-red-200">
+                                Please repay your existing loan before taking a new one.
+                              </p>
+                              <button
+                                onClick={() => setLoanActiveTab("repay")}
+                                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                              >
+                                Go to Repay Loan
+                              </button>
+                            </div>
+                          ) : (
+                            <form onSubmit={handleTakeLoan}>
+                              <div className="mb-6">
+                                <label className="block text-gray-300 mb-2">
+                                  Loan Amount (USBD)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={loanAmount}
+                                  onChange={handleLoanAmountChange}
+                                  placeholder="Enter loan amount"
+                                  className="w-full p-4 bg-gray-900 rounded-lg text-white outline-none"
+                                  required
+                                />
+                              </div>
+
+                              <div className="mb-6">
+                                <label className="block text-gray-300 mb-2">
+                                  Required Delegation (stCORE)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={collateralAmount}
+                                  readOnly
+                                  className="w-full p-4 bg-gray-900 rounded-lg text-white outline-none"
+                                />
+                                <p className="text-sm text-gray-400 mt-2">
+                                  Collateral ratio: 150%
+                                </p>
+                              </div>
+
+                              <div className="mb-8 p-4 bg-gray-900 rounded-lg">
+                                <h3 className="font-bold mb-2">Loan Terms</h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-gray-400">Interest Rate (APR)</p>
+                                    <p className="font-medium">5.0%</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-400">Term Length</p>
+                                    <p className="font-medium">90 days</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-400">Liquidation Threshold</p>
+                                    <p className="font-medium">120%</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-400">Origination Fee</p>
+                                    <p className="font-medium">0.5%</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <button
+                                type="submit"
+                                disabled={loanLoading}
+                                className={`w-full bg-[#FF8C00] text-black py-4 rounded-lg font-bold text-lg hover:bg-opacity-90 transition duration-300 ${loanLoading ? "opacity-70" : ""
+                                  }`}
+                              >
+                                {loanLoading ? "PROCESSING..." : "TAKE LOAN"}
+                              </button>
+                            </form>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Repay Loan Tab */}
+                      {loanActiveTab === "repay" && (
+                        <div>
+                          {loanDetails &&
+                            !loanDetails.isRepaid &&
+                            parseFloat(loanDetails.amount) > 0 ? (
+                            <form onSubmit={handleRepayLoan}>
+                              <div className="mb-6">
+                                <label className="block text-gray-300 mb-2">
+                                  Loan to Repay
+                                </label>
+                                <div className="w-full p-4 bg-gray-900 rounded-lg text-white">
+                                  {loanDetails.amount} USBD (Due:{" "}
+                                  {new Date(
+                                    Number(loanDetails.dueTime) * 1000
+                                  ).toLocaleDateString()}
+                                  )
+                                </div>
+                              </div>
+
+                              <div className="mb-6">
+                                <label className="block text-gray-300 mb-2">
+                                  Repayment Amount (USBD)
+                                </label>
+                                <input
+                                  type="number"
+                                  value={repayAmount}
+                                  readOnly
+                                  className="w-full p-4 bg-gray-900 rounded-lg text-white outline-none"
+                                />
+                                <p className="text-sm text-gray-400 mt-2">
+                                  Full repayment will release all delegation
+                                </p>
+                              </div>
+
+                              <div className="mb-8 p-4 bg-gray-900 rounded-lg">
+                                <h3 className="font-bold mb-2">Loan Details</h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-gray-400">Principal</p>
+                                    <p className="font-medium">{loanDetails.amount} USBD</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-400">Interest Due</p>
+                                    <p className="font-medium">
+                                      {Number(loanDetails.amount).toFixed(2)} USBD
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-400">Delegation to Release</p>
+                                    <p className="font-medium">
+                                      {loanDetails.collateralAmount} stCORE
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-gray-400">Due Date</p>
+                                    <p className="font-medium">
+                                      {new Date(
+                                        Number(loanDetails.dueTime) * 1000
+                                      ).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <button
+                                type="submit"
+                                className="w-full bg-[#FF8C00] text-black py-4 rounded-lg font-bold text-lg hover:bg-opacity-90 transition duration-300"
+                                disabled={loanLoading}
+                              >
+                                {loanLoading ? "PROCESSING..." : "REPAY LOAN"}
+                              </button>
+                            </form>
+                          ) : (
+                            <div className="text-center py-8 text-gray-400">
+                              <p className="mb-4">No active loans found to repay.</p>
+                              <button
+                                onClick={() => setLoanActiveTab("take")}
+                                className="px-6 py-2 bg-[#FF8C00] text-black rounded-lg font-medium hover:bg-opacity-90 transition duration-300"
+                              >
+                                Take a New Loan
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
