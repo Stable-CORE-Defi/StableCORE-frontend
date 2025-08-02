@@ -77,12 +77,17 @@ const SCUSDPage = () => {
       })) as bigint;
 
       // Calculate conversion rate (assets per share)
-      const assetsPerShare = Number(totalAssets) / Number(totalShares);
-      setConversionRate(assetsPerShare.toString());
+      if (totalShares > BigInt(0)) {
+        const assetsPerShare = Number(totalAssets) / Number(totalShares);
+        setConversionRate(assetsPerShare.toString());
+      } else {
+        // When no shares exist yet, the exchange rate is 1:1
+        setConversionRate("1");
+      }
 
-      // Preview shares for current amount if depositing
-      if (amount && activeTab === "deposit") {
-        const assets = parseUnits(amount, 18);
+      // Preview shares for 10 CUSD deposit
+      if (activeTab === "deposit") {
+        const assets = parseUnits("10", 18);
         const previewShares = (await publicClient.readContract({
           address: ContractAddresses.sCUSD as `0x${string}`,
           abi: sCUSDJson.abi,
@@ -92,17 +97,7 @@ const SCUSDPage = () => {
         setSCUSDBalance(formatUnits(previewShares, 18));
       }
 
-      // Preview assets for current amount if withdrawing
-      if (amount && activeTab === "withdraw") {
-        const shares = parseUnits(amount, 18);
-        const previewAssets = (await publicClient.readContract({
-          address: ContractAddresses.sCUSD as `0x${string}`,
-          abi: sCUSDJson.abi,
-          functionName: "previewRedeem",
-          args: [shares],
-        })) as bigint;
-        setSCUSDBalance(formatUnits(previewAssets, 18));
-      }
+
     } catch (err) {
       console.error("Error fetching vault data:", err);
     }
@@ -112,7 +107,28 @@ const SCUSDPage = () => {
     if (isConnected && address && publicClient) {
       fetchVaultData();
     }
-  }, [address, isConnected, publicClient, amount, activeTab]);
+  }, [address, isConnected, publicClient, activeTab]);
+
+  // Handle withdraw preview when amount changes
+  useEffect(() => {
+    if (isConnected && address && publicClient && activeTab === "withdraw" && amount) {
+      const updateWithdrawPreview = async () => {
+        try {
+          const shares = parseUnits(amount, 18);
+          const previewAssets = (await publicClient.readContract({
+            address: ContractAddresses.sCUSD as `0x${string}`,
+            abi: sCUSDJson.abi,
+            functionName: "previewRedeem",
+            args: [shares],
+          })) as bigint;
+          setSCUSDBalance(formatUnits(previewAssets, 18));
+        } catch (err) {
+          console.error("Error updating withdraw preview:", err);
+        }
+      };
+      updateWithdrawPreview();
+    }
+  }, [amount, activeTab, address, isConnected, publicClient]);
 
   // Handle amount change
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,26 +138,29 @@ const SCUSDPage = () => {
     }
   };
 
-  // Handle deposit (using deposit function)
+  // Handle deposit (fixed amount of 10 CUSD)
   const handleDeposit = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
-      showNotification("Please enter a valid amount", "error");
-      return;
-    }
-
     if (!walletClient || !publicClient) {
       showNotification("Wallet not connected properly", "error");
       return;
     }
 
+    // Check if user has at least 10 CUSD
+    if (parseFloat(USBDBalance) < 10) {
+      showNotification("Insufficient CUSD balance. You need at least 10 CUSD to deposit.", "error");
+      return;
+    }
+
     setLoading(true);
     try {
+      const depositAmount = "10"; // Fixed amount of 10 CUSD
+
       // First approve CUSD
       const { request: approveRequest } = await publicClient.simulateContract({
         address: ContractAddresses.CUSD as `0x${string}`,
         abi: CUSDJson.abi,
         functionName: "approve",
-        args: [ContractAddresses.sCUSD, parseUnits(amount, 18)],
+        args: [ContractAddresses.sCUSD, parseUnits(depositAmount, 18)],
         account: address,
       });
 
@@ -153,7 +172,7 @@ const SCUSDPage = () => {
         address: ContractAddresses.sCUSD as `0x${string}`,
         abi: sCUSDJson.abi,
         functionName: "deposit",
-        args: [parseUnits(amount, 18), address],
+        args: [parseUnits(depositAmount, 18), address],
         account: address,
       });
 
@@ -161,8 +180,7 @@ const SCUSDPage = () => {
       await publicClient.waitForTransactionReceipt({ hash: depositHash });
 
       fetchVaultData();
-      setAmount("");
-      showNotification(`Successfully deposited ${amount} CUSD`, "success");
+      showNotification(`Successfully deposited ${depositAmount} CUSD`, "success");
     } catch (error: unknown) {
       console.error("Error depositing:", error);
       showNotification(
@@ -254,8 +272,8 @@ const SCUSDPage = () => {
         {notification.show && (
           <div
             className={`mb-4 p-3 rounded-md ${notification.type === "error"
-                ? "bg-red-900 bg-opacity-50 text-red-200"
-                : "bg-green-900 bg-opacity-50 text-green-200"
+              ? "bg-red-900 bg-opacity-50 text-red-200"
+              : "bg-green-900 bg-opacity-50 text-green-200"
               }`}
           >
             {notification.message}
@@ -268,8 +286,8 @@ const SCUSDPage = () => {
             <button
               onClick={() => setActiveTab("deposit")}
               className={`py-2 px-4 ${activeTab === "deposit"
-                  ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
-                  : "text-gray-400"
+                ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
+                : "text-gray-400"
                 }`}
             >
               Deposit
@@ -277,8 +295,8 @@ const SCUSDPage = () => {
             <button
               onClick={() => setActiveTab("withdraw")}
               className={`py-2 px-4 ${activeTab === "withdraw"
-                  ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
-                  : "text-gray-400"
+                ? "text-[#FF8C00] border-b-2 border-[#FF8C00]"
+                : "text-gray-400"
                 }`}
             >
               Withdraw
@@ -313,43 +331,66 @@ const SCUSDPage = () => {
             </p>
           </div>
 
-          {/* Amount Input */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-[#FF8C00] mb-1">
-              {activeTab === "deposit"
-                ? "CUSD Amount to Deposit"
-                : "sCUSD Shares to Redeem"}
-            </label>
-            <input
-              type="text"
-              value={amount}
-              onChange={handleAmountChange}
-              placeholder="0.00"
-              className="w-full px-3 py-2 bg-black border border-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C00]"
-              disabled={loading}
-            />
-            {amount && (
-              <p className="text-sm text-gray-400 mt-2">
-                {activeTab === "deposit"
-                  ? `You will receive: ${formatNumber(sCUSDBalance)} sCUSD`
-                  : `You will receive: ${formatNumber(sCUSDBalance)} CUSD`}
-              </p>
-            )}
-          </div>
+          {/* Deposit Preview - Show for deposit tab */}
+          {activeTab === "deposit" && (
+            <div className="mb-6">
+              <div className="p-4 bg-gray-900 bg-opacity-50 rounded-lg">
+                <p className="text-sm text-gray-400 mb-2">
+                  Deposit Amount: <span className="text-[#FF8C00] font-bold">10 CUSD</span>
+                </p>
+                <p className="text-sm text-gray-400">
+                  You will receive: <span className="text-[#FF8C00] font-bold">~{formatNumber(sCUSDBalance)} sCUSD</span>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Amount Input - Only show for withdraw tab */}
+          {activeTab === "withdraw" && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-[#FF8C00] mb-1">
+                sCUSD Shares to Redeem
+              </label>
+              <input
+                type="text"
+                value={amount}
+                onChange={handleAmountChange}
+                placeholder="0.00"
+                className="w-full px-3 py-2 bg-black border border-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8C00]"
+                disabled={loading}
+              />
+              {amount && (
+                <p className="text-sm text-gray-400 mt-2">
+                  You will receive: {formatNumber(sCUSDBalance)} CUSD
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Action Button */}
-          <button
-            onClick={activeTab === "deposit" ? handleDeposit : handleWithdraw}
-            disabled={loading || !amount}
-            className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${loading ? "opacity-70" : ""
-              } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
-          >
-            {loading
-              ? "Processing..."
-              : activeTab === "deposit"
-                ? "Deposit CUSD"
-                : "Withdraw CUSD"}
-          </button>
+          {activeTab === "deposit" ? (
+            <button
+              onClick={handleDeposit}
+              disabled={loading || parseFloat(USBDBalance) < 10}
+              className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${loading || parseFloat(USBDBalance) < 10 ? "opacity-50 cursor-not-allowed" : ""
+                } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+            >
+              {loading
+                ? "Processing..."
+                : parseFloat(USBDBalance) < 10
+                  ? "Insufficient CUSD Balance (Need 10+ CUSD)"
+                  : "Deposit 10 CUSD"}
+            </button>
+          ) : (
+            <button
+              onClick={handleWithdraw}
+              disabled={loading || !amount}
+              className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${loading ? "opacity-70" : ""
+                } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
+            >
+              {loading ? "Processing..." : "Withdraw CUSD"}
+            </button>
+          )}
         </div>
 
         {/* Info Box */}
