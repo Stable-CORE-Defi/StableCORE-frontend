@@ -69,6 +69,12 @@ const Navbar = () => {
           >
             USDC
           </Link>
+          <Link
+            href="/swap"
+            className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
+          >
+            SWAP
+          </Link>
           {/* <Link
             href="/stCORE"
             className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
