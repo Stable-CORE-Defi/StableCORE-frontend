@@ -3,20 +3,20 @@
 import React, { useState, useEffect } from "react";
 import { useAccount, usePublicClient, useWalletClient, useChainId } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
-import USBDJson from "@/contracts/USBD.sol/USBD.json";
+import USDCJson from "@/contracts/USDC/USDC.json";
 import CUSDJson from "@/contracts/CUSD.sol/CUSD.json";
 import { getContractAddress, supportedChains } from "../../config";
 
 const MintPage = () => {
   const [amount, setAmount] = useState("");
-  const [USBDBalance, setUSBDBalance] = useState("0");
+  const [USDCBalance, setUSDCBalance] = useState("0");
   const [CUSDBalance, setCUSDBalance] = useState("0");
   const [loading, setLoading] = useState(false);
-  const [USBDLoading, setUSBDLoading] = useState(false);
+  const [USDCLoading, setUSDCLoading] = useState(false);
   const [error, setError] = useState("");
-  const [USBDError, setUSBDError] = useState("");
+  const [USDCError, setUSDCError] = useState("");
   const [success, setSuccess] = useState("");
-  const [USBDSuccess, setUSBDSuccess] = useState("");
+  const [USDCSuccess, setUSDCSuccess] = useState("");
 
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
@@ -29,21 +29,21 @@ const MintPage = () => {
 
     try {
       // Get contract addresses for current network
-      const usbdAddress = getContractAddress("USBD", chainId);
+      const USDCAddress = getContractAddress("USDC", chainId);
       const cusdAddress = getContractAddress("CUSD", chainId);
 
-      // Fetch USBD balance
-      if (usbdAddress !== '0x0000000000000000000000000000000000000000') {
-        const USBDBalanceData = await publicClient.readContract({
-          address: usbdAddress as `0x${string}`,
-          abi: USBDJson.abi,
+      // Fetch USDC balance
+      if (USDCAddress !== '0x0000000000000000000000000000000000000000') {
+        const USDCBalanceData = await publicClient.readContract({
+          address: USDCAddress as `0x${string}`,
+          abi: USDCJson.abi,
           functionName: "balanceOf",
           args: [address],
         });
 
-        setUSBDBalance(formatUnits(USBDBalanceData as bigint, 18)); // USBD has 18 decimals
+        setUSDCBalance(formatUnits(USDCBalanceData as bigint, 18)); // USDC has 18 decimals
       } else {
-        setUSBDBalance("0");
+        setUSDCBalance("0");
       }
 
       // Fetch CUSD balance
@@ -61,7 +61,7 @@ const MintPage = () => {
       }
     } catch (err) {
       console.error("Error fetching balances:", err);
-      setUSBDBalance("0");
+      setUSDCBalance("0");
       setCUSDBalance("0");
     }
   };
@@ -91,35 +91,35 @@ const MintPage = () => {
 
 
 
-  // Handle USBD mint (fixed amount of 10 USBD)
-  const handleUSBDMint = async () => {
+  // Handle USDC mint (fixed amount of 10 USDC)
+  const handleUSDCMint = async () => {
     if (!walletClient || !publicClient) {
-      setUSBDError("Wallet not connected properly");
+      setUSDCError("Wallet not connected properly");
       return;
     }
 
-    setUSBDLoading(true);
-    setUSBDError("");
-    setUSBDSuccess("");
+    setUSDCLoading(true);
+    setUSDCError("");
+    setUSDCSuccess("");
 
     try {
-      // Convert 10 USBD to units (18 decimals)
-      const USBDAmountUnits = parseUnits("10", 18);
+      // Convert 10 USDC to units (18 decimals)
+      const USDCAmountUnits = parseUnits("10", 18);
 
-      // Get USBD contract address for current network
-      const usbdAddress = getContractAddress("USBD", chainId);
-      if (usbdAddress === '0x0000000000000000000000000000000000000000') {
-        setUSBDError("USBD contract not available on current network");
-        setUSBDLoading(false);
+      // Get USDC contract address for current network
+      const USDCAddress = getContractAddress("USDC", chainId);
+      if (USDCAddress === '0x0000000000000000000000000000000000000000') {
+        setUSDCError("USDC contract not available on current network");
+        setUSDCLoading(false);
         return;
       }
 
       // Prepare the mint transaction
       const { request } = await publicClient.simulateContract({
-        address: usbdAddress as `0x${string}`,
-        abi: USBDJson.abi,
-        functionName: "mint",
-        args: [USBDAmountUnits],
+        address: USDCAddress as `0x${string}`,
+        abi: USDCJson.abi,
+        functionName: "mintToCUSD",
+        args: [USDCAmountUnits],
         account: address,
       });
 
@@ -131,16 +131,16 @@ const MintPage = () => {
 
       // Update balance
       fetchBalances();
-      setUSBDSuccess("Successfully minted 10 USBD!");
+      setUSDCSuccess("Successfully minted 10 USDC!");
     } catch (err: unknown) {
-      console.error("Error minting USBD:", err);
-      setUSBDError(
+      console.error("Error minting USDC:", err);
+      setUSDCError(
         err instanceof Error
           ? err.message
-          : "Failed to mint USBD. Please try again."
+          : "Failed to mint USDC. Please try again."
       );
     } finally {
-      setUSBDLoading(false);
+      setUSDCLoading(false);
     }
   };
 
@@ -162,32 +162,32 @@ const MintPage = () => {
 
     try {
       // Get contract addresses for current network
-      const usbdAddress = getContractAddress("USBD", chainId);
+      const USDCAddress = getContractAddress("USDC", chainId);
       const cusdAddress = getContractAddress("CUSD", chainId);
 
-      if (usbdAddress === '0x0000000000000000000000000000000000000000' ||
+      if (USDCAddress === '0x0000000000000000000000000000000000000000' ||
         cusdAddress === '0x0000000000000000000000000000000000000000') {
         setError("Contracts not available on current network");
         setLoading(false);
         return;
       }
 
-      // First approve USBD spending
-      const USBDAmount = parseUnits(amount, 18); // USBD has 18 decimals
+      // First approve USDC spending
+      const USDCAmount = parseUnits(amount, 18); // USDC has 18 decimals
 
-      // Check if we have enough USBD
-      if (parseFloat(USBDBalance) < parseFloat(amount)) {
-        setError(`Insufficient USBD balance. You have ${USBDBalance} USBD.`);
+      // Check if we have enough USDC
+      if (parseFloat(USDCBalance) < parseFloat(amount)) {
+        setError(`Insufficient USDC balance. You have ${USDCBalance} USDC.`);
         setLoading(false);
         return;
       }
 
-      // Approve USBD
+      // Approve USDC
       const { request: approveRequest } = await publicClient.simulateContract({
-        address: usbdAddress as `0x${string}`,
-        abi: USBDJson.abi,
+        address: USDCAddress as `0x${string}`,
+        abi: USDCJson.abi,
         functionName: "approve",
-        args: [cusdAddress as `0x${string}`, USBDAmount],
+        args: [cusdAddress as `0x${string}`, USDCAmount],
         account: address,
       });
 
@@ -199,7 +199,7 @@ const MintPage = () => {
         address: cusdAddress as `0x${string}`,
         abi: CUSDJson.abi,
         functionName: "depositAndMint",
-        args: [USBDAmount],
+        args: [USDCAmount],
         account: address,
       });
 
@@ -262,38 +262,38 @@ const MintPage = () => {
           </div>
         ) : (
           <>
-            {/* USBD Mint Button - Above CUSD Box */}
+            {/* USDC Mint Button - Above CUSD Box */}
             <div className="max-w-2xl mx-auto mb-6">
               <div className="bg-black border border-gray-800 p-4 rounded-lg shadow-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-300 mb-1">
-                      Your USBD Balance:{" "}
+                      Your USDC Balance:{" "}
                       <span className="text-[#FF8C00] font-bold">
-                        {USBDBalance} USBD
+                        {USDCBalance} USDC
                       </span>
                     </p>
                     <p className="text-sm text-gray-400">
-                      Need USBD to mint CUSD? Get 10 USBD for testing
+                      Need USDC to mint CUSD? Get 10 USDC for testing
                     </p>
                   </div>
 
                   <button
-                    onClick={handleUSBDMint}
-                    disabled={USBDLoading}
-                    className={`px-6 py-3 rounded-md text-white font-medium transition-colors ${USBDLoading ? "opacity-70" : ""
+                    onClick={handleUSDCMint}
+                    disabled={USDCLoading}
+                    className={`px-6 py-3 rounded-md text-white font-medium transition-colors ${USDCLoading ? "opacity-70" : ""
                       } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
                   >
-                    {USBDLoading ? "Processing..." : "Mint 10 USBD"}
+                    {USDCLoading ? "Processing..." : "Mint 10 USDC"}
                   </button>
                 </div>
 
-                {USBDError && (
-                  <p className="mt-2 text-red-400 text-sm">Error: {USBDError}</p>
+                {USDCError && (
+                  <p className="mt-2 text-red-400 text-sm">Error: {USDCError}</p>
                 )}
 
-                {USBDSuccess && (
-                  <p className="mt-2 text-green-400 text-sm">{USBDSuccess}</p>
+                {USDCSuccess && (
+                  <p className="mt-2 text-green-400 text-sm">{USDCSuccess}</p>
                 )}
               </div>
             </div>
@@ -307,9 +307,9 @@ const MintPage = () => {
 
                 <div className="mb-4">
                   <p className="text-gray-300 mb-2">
-                    Your USBD Balance:{" "}
+                    Your USDC Balance:{" "}
                     <span className="text-[#FF8C00] font-bold">
-                      {USBDBalance} USBD
+                      {USDCBalance} USDC
                     </span>
                   </p>
                   <p className="text-gray-300 mb-4">
@@ -339,7 +339,7 @@ const MintPage = () => {
                         disabled={loading}
                       />
                       <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                        <span className="text-gray-400">USBD</span>
+                        <span className="text-gray-400">USDC</span>
                       </div>
                     </div>
                   </div>
@@ -385,10 +385,10 @@ const MintPage = () => {
                   About CUSD
                 </h2>
                 <p className="text-gray-300 mb-2">
-                  CUSD is a yield-bearing stablecoin backed by USBD collateral.
+                  CUSD is a yield-bearing stablecoin backed by USDC collateral.
                 </p>
                 <p className="text-gray-300">
-                  When you mint CUSD, your USBD is deposited into the protocol and
+                  When you mint CUSD, your USDC is deposited into the protocol and
                   used to generate yield through secure lending markets.
                 </p>
               </div>

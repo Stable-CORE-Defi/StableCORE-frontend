@@ -50,7 +50,7 @@ export const supportedChains = {
 
 // Update the interfaces
 interface BaseAddresses {
-  USBD: string;
+  USDC: string;
   stCORE: string;
   CUSD: string;
   sCUSD: string;
@@ -68,8 +68,8 @@ export const contractAddresses: {
   coreTestnet2: CoreTestnet2Addresses;
 } = {
   hardhat: {
-    USBD: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
-    CUSD: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0', // Changed from PUSBD to CUSD
+    USDC: '0x5FbDB2315678afecb367f032d93F642f64180aa3',
+    CUSD: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0', // Changed from PUSDC to CUSD
     stCORE: '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512',
     sCUSD: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
     Eigen: '0x0165878A594ca255338adfa4d48449f69242Eb8F',
@@ -77,7 +77,7 @@ export const contractAddresses: {
     LoanManager: '0xa513E6E4b8f2a923D98304ec87F64353C4D5C853',
   },
   coreTestnet2: {
-    USBD: '0x9155497EAE31D432C0b13dBCc0615a37f55a2c87',
+    USDC: '0x9155497EAE31D432C0b13dBCc0615a37f55a2c87',
     stCORE: '0xfB12F7170FF298CDed84C793dAb9aBBEcc01E798',
     CUSD: '0xc1EeD9232A0A44c2463ACB83698c162966FBc78d',
     sCUSD: '0xC220Ed128102d888af857d137a54b9B7573A41b2',

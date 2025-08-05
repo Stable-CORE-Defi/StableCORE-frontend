@@ -20,7 +20,7 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Network Switching & USBD Minting
+## Network Switching & USDC Minting
 
 This application supports switching between Hardhat local network and Core Testnet2. The network switching functionality has been implemented with the following features:
 
@@ -29,18 +29,18 @@ This application supports switching between Hardhat local network and Core Testn
 - **Dynamic Contract Addresses**: Contract addresses automatically update based on the selected network
 - **Balance Polling**: Balances are automatically refreshed every 5 seconds and when switching networks
 
-### USBD Minting
-- **Dynamic Contract Resolution**: USBD contract addresses are resolved based on the current network
+### USDC Minting
+- **Dynamic Contract Resolution**: USDC contract addresses are resolved based on the current network
 - **Real-time Balance Updates**: Balance is automatically updated after minting transactions
 - **Transaction Status**: Shows transaction hash and status during minting
 - **Error Handling**: Proper error messages for network-specific issues
 
-### Testing USBD Minting
+### Testing USDC Minting
 1. Connect your wallet
 2. Switch to the desired network (Hardhat or Core Testnet2) using the navbar buttons
-3. Navigate to the USBD page (`/usdc`) or use the mint page (`/mint`)
+3. Navigate to the USDC page (`/usdc`) or use the mint page (`/mint`)
 4. Enter the amount to mint
-5. Click "Mint USBD"
+5. Click "Mint USDC"
 6. The balance should update automatically after the transaction completes
 
 ### Supported Networks

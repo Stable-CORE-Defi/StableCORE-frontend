@@ -7,7 +7,7 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_USBD",
+          "name": "_USDC",
           "type": "address"
         }
       ],
@@ -159,7 +159,7 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "USBDAmount",
+          "name": "USDCAmount",
           "type": "uint256"
         },
         {
@@ -253,7 +253,7 @@
         {
           "indexed": false,
           "internalType": "uint256",
-          "name": "USBDAmount",
+          "name": "USDCAmount",
           "type": "uint256"
         }
       ],
@@ -344,7 +344,7 @@
       "inputs": [
         {
           "internalType": "uint256",
-          "name": "USBDAmount",
+          "name": "USDCAmount",
           "type": "uint256"
         }
       ],
@@ -393,7 +393,7 @@
           "type": "address"
         }
       ],
-      "name": "getUSBDBalance",
+      "name": "getUSDCBalance",
       "outputs": [
         {
           "internalType": "uint256",
@@ -421,7 +421,7 @@
         },
         {
           "internalType": "uint256",
-          "name": "USBDBalance",
+          "name": "USDCBalance",
           "type": "uint256"
         },
         {
@@ -467,7 +467,7 @@
     },
     {
       "inputs": [],
-      "name": "loanedUSBDAmount",
+      "name": "loanedUSDCAmount",
       "outputs": [
         {
           "internalType": "uint256",
@@ -767,10 +767,10 @@
     },
     {
       "inputs": [],
-      "name": "usbdToken",
+      "name": "USDCToken",
       "outputs": [
         {
-          "internalType": "contract USBD",
+          "internalType": "contract USDC",
           "name": "",
           "type": "address"
         }

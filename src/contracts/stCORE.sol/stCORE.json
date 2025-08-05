@@ -322,7 +322,7 @@
           "type": "uint256"
         }
       ],
-      "name": "convertToUSBDAndSendToCUSD",
+      "name": "convertToUSDCAndSendToCUSD",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -442,11 +442,11 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "_USBDAddress",
+          "name": "_USDCAddress",
           "type": "address"
         }
       ],
-      "name": "setUSBDAddress",
+      "name": "setUSDCAddress",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -563,10 +563,10 @@
     },
     {
       "inputs": [],
-      "name": "usbdToken",
+      "name": "USDCToken",
       "outputs": [
         {
-          "internalType": "contract USBD",
+          "internalType": "contract USDC",
           "name": "",
           "type": "address"
         }

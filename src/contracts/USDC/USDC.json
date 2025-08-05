@@ -1,7 +1,7 @@
 {
   "_format": "hh-sol-artifact-1",
-  "contractName": "USBD",
-  "sourceName": "contracts/USBD.sol",
+  "contractName": "USDC",
+  "sourceName": "contracts/USDC.sol",
   "abi": [
     {
       "inputs": [],

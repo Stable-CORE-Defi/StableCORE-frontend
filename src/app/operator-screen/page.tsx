@@ -15,7 +15,7 @@ interface LoanDetails {
   dueTime: number;
   isRepaid: boolean;
   collateralAmount: string;
-  loanedUSBDAmount: string;
+  loanedUSDCAmount: string;
 }
 
 interface LoanContractResponse {
@@ -25,7 +25,7 @@ interface LoanContractResponse {
   3: bigint; // dueTime
   4: boolean; // isRepaid
   5: bigint; // collateralAmount
-  6: bigint; // loanedUSBDAmount
+  6: bigint; // loanedUSDCAmount
 }
 
 // Mock data for RWA
@@ -91,7 +91,7 @@ export default function OperatorScreen() {
     message: "",
     type: "",
   });
-  const [USBDBalance, setUSBDBalance] = useState("0");
+  const [USDCBalance, setUSDCBalance] = useState("0");
   const [operatorBalance, setOperatorBalance] = useState("0");
   const [delegatedAmount, setDelegatedAmount] = useState("0");
   const [delegatedAmountLoading, setDelegatedAmountLoading] = useState(false);
@@ -138,23 +138,23 @@ export default function OperatorScreen() {
     }
   };
 
-  // Fetch stCORE and USBD balances
+  // Fetch stCORE and USDC balances
   const fetchBalances = async () => {
     if (!address || !publicClient) return;
 
     try {
-      // Fetch USBD balance
-      const USBDBalanceData = await publicClient.readContract({
+      // Fetch USDC balance
+      const USDCBalanceData = await publicClient.readContract({
         address: ContractAddresses.CUSD as `0x${string}`,
         abi: CUSDJson.abi,
         functionName: "balanceOf",
         args: [address],
       });
 
-      setUSBDBalance(formatUnits(USBDBalanceData as bigint, 18));
+      setUSDCBalance(formatUnits(USDCBalanceData as bigint, 18));
     } catch (err) {
-      console.error("Error fetching USBD balance:", err);
-      setUSBDBalance("0");
+      console.error("Error fetching USDC balance:", err);
+      setUSDCBalance("0");
     }
 
     // Fetch delegated amount from Eigen contract separately to ensure it's always attempted
@@ -214,7 +214,7 @@ export default function OperatorScreen() {
           dueTime: loanDetailsResponse[3] ? Number(loanDetailsResponse[3]) : 0,
           isRepaid: loanDetailsResponse[4] || false,
           collateralAmount: collateralAmount,
-          loanedUSBDAmount: loanDetailsResponse[6]
+          loanedUSDCAmount: loanDetailsResponse[6]
             ? formatUnits(loanDetailsResponse[6], 18)
             : "0",
         });
@@ -285,7 +285,7 @@ export default function OperatorScreen() {
     setCollateralAmount(calculateCollateral(value));
   };
 
-  // Calculate required collateral (stCORE) based on loan amount (USBD)
+  // Calculate required collateral (stCORE) based on loan amount (USDC)
   const calculateCollateral = (amount: string) => {
     const loanValue = parseFloat(amount) || 0;
     return (loanValue * 1.5).toFixed(2);
@@ -307,8 +307,8 @@ export default function OperatorScreen() {
 
     setIsLoading(true);
     try {
-      // Convert loan amount from PUSBD to wei
-      const loanAmountInWei = parseUnits(loanAmount, 18); // 6 decimals for PUSBD
+      // Convert loan amount from PUSDC to wei
+      const loanAmountInWei = parseUnits(loanAmount, 18); // 6 decimals for PUSDC
 
       // Now call createLoan on LoanManager contract
       const { request } = await publicClient.simulateContract({
@@ -327,7 +327,7 @@ export default function OperatorScreen() {
       fetchActiveLoans();
 
       showNotification(
-        `Successfully created loan for ${loanAmount} PUSBD`,
+        `Successfully created loan for ${loanAmount} PUSDC`,
         "success"
       );
       setLoanAmount("");
@@ -388,8 +388,8 @@ export default function OperatorScreen() {
     }
   };
 
-  // Add this function to handle minting PUSBD to the operator
-  const handleMintUSBD = async () => {
+  // Add this function to handle minting PUSDC to the operator
+  const handleMintUSDC = async () => {
     if (!walletClient || !publicClient || !address) {
       showNotification("Wallet not connected properly", "error");
       return;
@@ -646,7 +646,7 @@ export default function OperatorScreen() {
                     <thead>
                       <tr className="text-left border-b border-gray-800">
                         <th className="pb-2">Asset</th>
-                        <th className="pb-2">Amount (USBD)</th>
+                        <th className="pb-2">Amount (USDC)</th>
                         <th className="pb-2">Yield</th>
                         <th className="pb-2">Current Value</th>
                         <th className="pb-2">Actions</th>
@@ -759,7 +759,7 @@ export default function OperatorScreen() {
                   <table className="w-full">
                     <thead>
                       <tr className="text-left border-b border-gray-800">
-                        <th className="pb-3 pr-4">Amount (USBD)</th>
+                        <th className="pb-3 pr-4">Amount (USDC)</th>
                         <th className="pb-3 pr-4">Delegation (stCORE)</th>
                         <th className="pb-3 pr-4">APR (%)</th>
                         <th className="pb-3 pr-4">Status</th>
@@ -769,7 +769,7 @@ export default function OperatorScreen() {
                     </thead>
                     <tbody>
                       <tr className="border-b border-gray-800">
-                        <td className="py-4 pr-4">{loanDetails.amount} USBD</td>
+                        <td className="py-4 pr-4">{loanDetails.amount} USDC</td>
                         <td className="py-4 pr-4">
                           {loanDetails.collateralAmount} stCORE
                         </td>
@@ -790,7 +790,7 @@ export default function OperatorScreen() {
                           <button
                             onClick={() => {
                               setActiveTab("repay");
-                              // setRepayAmount(loanDetails.loanedUSBDAmount);
+                              // setRepayAmount(loanDetails.loanedUSDCAmount);
                             }}
                             className="text-[#FF8C00] hover:underline"
                           >
@@ -831,7 +831,7 @@ export default function OperatorScreen() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-gray-400">Loan Amount</p>
-                      <p className="font-medium">{loanDetails.amount} PUSBD</p>
+                      <p className="font-medium">{loanDetails.amount} PUSDC</p>
                     </div>
                     <div>
                       <p className="text-gray-400">Delegated stCORE</p>
@@ -867,8 +867,8 @@ export default function OperatorScreen() {
                   <div className="mb-6 p-4 bg-gray-900 rounded-lg">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-gray-400">Your PUSBD Balance</p>
-                        <p className="font-medium">{USBDBalance} PUSBD</p>
+                        <p className="text-gray-400">Your PUSDC Balance</p>
+                        <p className="font-medium">{USDCBalance} PUSDC</p>
                       </div>
                       <div>
                         <p className="text-gray-400">Total Delegated stCORE</p>
@@ -885,7 +885,7 @@ export default function OperatorScreen() {
                   <form onSubmit={handleTakeLoan}>
                     <div className="mb-6">
                       <label className="block text-gray-300 mb-2">
-                        Loan Amount (PUSBD)
+                        Loan Amount (PUSDC)
                       </label>
                       <input
                         type="number"
@@ -969,7 +969,7 @@ export default function OperatorScreen() {
                   </p>
                 </div>
                 <button
-                  onClick={handleMintUSBD}
+                  onClick={handleMintUSDC}
                   disabled={isLoading}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
@@ -986,7 +986,7 @@ export default function OperatorScreen() {
                       Loan to Repay
                     </label>
                     <div className="w-full p-4 bg-gray-900 rounded-lg text-white">
-                      {loanDetails.amount} PUSBD (Due:{" "}
+                      {loanDetails.amount} PUSDC (Due:{" "}
                       {new Date(
                         Number(loanDetails.dueTime) * 1000
                       ).toLocaleDateString()}
@@ -996,7 +996,7 @@ export default function OperatorScreen() {
 
                   <div className="mb-6">
                     <label className="block text-gray-300 mb-2">
-                      Repayment Amount (PUSBD)
+                      Repayment Amount (PUSDC)
                     </label>
                     <input
                       type="number"

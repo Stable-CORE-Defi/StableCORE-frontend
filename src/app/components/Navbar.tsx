@@ -67,7 +67,7 @@ const Navbar = () => {
             href="/usdc"
             className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
-            USBD
+            USDC
           </Link>
           {/* <Link
             href="/stCORE"

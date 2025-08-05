@@ -4,11 +4,11 @@ import React, { useState, useEffect } from "react";
 import { useAccount, usePublicClient, useWalletClient, useChainId } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 
-import USBDJson from "@/contracts/USBD.sol/USBD.json";
+import USDCJson from "@/contracts/USDC.sol/USDC.json";
 import { getContractAddress, supportedChains } from "../../config";
 import ContractAddresses from "../../deployed-address.json";
 
-const USBDMint = () => {
+const USDCMint = () => {
   const [amount, setAmount] = useState("");
   const [balance, setBalance] = useState("0");
   const [loading, setLoading] = useState(false);
@@ -23,14 +23,14 @@ const USBDMint = () => {
   const chainId = useChainId();
 
   // Get the correct contract address for the current network
-  const getUSBDAddress = () => {
-    const dynamicAddress = getContractAddress("USBD", chainId);
-    console.log("Dynamic USBD address:", dynamicAddress);
+  const getUSDCAddress = () => {
+    const dynamicAddress = getContractAddress("USDC", chainId);
+    console.log("Dynamic USDC address:", dynamicAddress);
 
     // Fallback to deployed-address.json if dynamic address is zero
     if (dynamicAddress === '0x0000000000000000000000000000000000000000') {
       console.log("Using fallback address from deployed-address.json");
-      return ContractAddresses.USBD;
+      return ContractAddresses.USDC;
     }
 
     return dynamicAddress;
@@ -45,21 +45,21 @@ const USBDMint = () => {
 
     setBalanceLoading(true);
     try {
-      const usbdAddress = getUSBDAddress();
+      const USDCAddress = getUSDCAddress();
       console.log("Current chainId:", chainId);
-      console.log("USBD Address for current network:", usbdAddress);
+      console.log("USDC Address for current network:", USDCAddress);
       console.log("User address:", address);
 
-      if (usbdAddress === '0x0000000000000000000000000000000000000000') {
-        console.warn("USBD contract not found for current network");
+      if (USDCAddress === '0x0000000000000000000000000000000000000000') {
+        console.warn("USDC contract not found for current network");
         setBalance("0");
         return;
       }
 
-      console.log("Attempting to read USBD balance...");
+      console.log("Attempting to read USDC balance...");
       const balanceData = await publicClient.readContract({
-        address: usbdAddress as `0x${string}`,
-        abi: USBDJson.abi,
+        address: USDCAddress as `0x${string}`,
+        abi: USDCJson.abi,
         functionName: "balanceOf",
         args: [address],
       });
@@ -115,9 +115,9 @@ const USBDMint = () => {
       return;
     }
 
-    const usbdAddress = getUSBDAddress();
-    if (usbdAddress === '0x0000000000000000000000000000000000000000') {
-      setError("USBD contract not available on current network");
+    const USDCAddress = getUSDCAddress();
+    if (USDCAddress === '0x0000000000000000000000000000000000000000') {
+      setError("USDC contract not available on current network");
       return;
     }
 
@@ -126,15 +126,15 @@ const USBDMint = () => {
     setSuccess("");
 
     try {
-      // Convert ETH amount to USBD units (18 decimals)
-      const USBDAmount = parseUnits(amount, 18);
+      // Convert ETH amount to USDC units (18 decimals)
+      const USDCAmount = parseUnits(amount, 18);
 
       // Prepare the mint transaction
       const { request } = await publicClient.simulateContract({
-        address: usbdAddress as `0x${string}`,
-        abi: USBDJson.abi,
+        address: USDCAddress as `0x${string}`,
+        abi: USDCJson.abi,
         functionName: "mint",
-        args: [USBDAmount],
+        args: [USDCAmount],
         account: address,
       });
 
@@ -149,14 +149,14 @@ const USBDMint = () => {
       fetchBalance();
       setAmount("");
       setTxHash("");
-      setSuccess(`Successfully minted ${amount} USBD!`);
+      setSuccess(`Successfully minted ${amount} USDC!`);
     } catch (err: unknown) {
-      console.error("Error minting USBD:", err);
+      console.error("Error minting USDC:", err);
       setTxHash("");
       setError(
         err instanceof Error
           ? err.message
-          : "Failed to mint USBD. Please try again."
+          : "Failed to mint USDC. Please try again."
       );
     } finally {
       setLoading(false);
@@ -185,13 +185,13 @@ const USBDMint = () => {
             fontFamily: "monospace",
           }}
         >
-          USBD MINTER
+          USDC MINTER
         </h1>
 
         {!isConnected ? (
           <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg mb-6 backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
             <p className="text-center text-gray-300">
-              Please connect your wallet to mint USBD
+              Please connect your wallet to mint USDC
             </p>
           </div>
         ) : (
@@ -205,12 +205,12 @@ const USBDMint = () => {
                   Chain ID: <span className="text-[#FF8C00] font-bold">{chainId}</span>
                 </p>
                 <p className="text-gray-300 mb-2">
-                  USBD Contract: <span className="text-[#FF8C00] font-bold text-xs">{getUSBDAddress()}</span>
+                  USDC Contract: <span className="text-[#FF8C00] font-bold text-xs">{getUSDCAddress()}</span>
                 </p>
                 <p className="text-gray-300 mb-2">
-                  Your USBD Balance:{" "}
+                  Your USDC Balance:{" "}
                   <span className="text-[#FF8C00] font-bold">
-                    {balanceLoading ? "Loading..." : `${balance} USBD`}
+                    {balanceLoading ? "Loading..." : `${balance} USDC`}
                   </span>
                 </p>
                 <div className="flex space-x-2">
@@ -235,12 +235,12 @@ const USBDMint = () => {
                         alert("Public client not available");
                         return;
                       }
-                      const usbdAddress = getUSBDAddress();
-                      console.log("Testing contract access for:", usbdAddress);
+                      const USDCAddress = getUSDCAddress();
+                      console.log("Testing contract access for:", USDCAddress);
                       try {
                         const totalSupply = await publicClient.readContract({
-                          address: usbdAddress as `0x${string}`,
-                          abi: USBDJson.abi,
+                          address: USDCAddress as `0x${string}`,
+                          abi: USDCJson.abi,
                           functionName: "totalSupply",
                           args: [],
                         });
@@ -282,7 +282,7 @@ const USBDMint = () => {
                 className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${loading ? "opacity-70" : ""
                   } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
               >
-                {loading ? "Processing..." : "Mint USBD"}
+                {loading ? "Processing..." : "Mint USDC"}
               </button>
 
               {txHash && (
@@ -303,14 +303,14 @@ const USBDMint = () => {
 
             <div className="bg-black border border-gray-800 p-4 rounded-lg">
               <h2 className="text-lg font-semibold mb-2 text-[#FF8C00]">
-                About USBD Minting
+                About USDC Minting
               </h2>
               <p className="text-gray-300 mb-2">
-                This is a testnet version of USBD that you can mint freely for
+                This is a testnet version of USDC that you can mint freely for
                 testing purposes.
               </p>
               <p className="text-gray-300">
-                In production, USBD is a fully-collateralized US dollar
+                In production, USDC is a fully-collateralized US dollar
                 stablecoin issued by Circle.
               </p>
             </div>
@@ -321,4 +321,4 @@ const USBDMint = () => {
   );
 };
 
-export default USBDMint;
+export default USDCMint;

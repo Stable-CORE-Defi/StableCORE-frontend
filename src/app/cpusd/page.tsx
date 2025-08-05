@@ -10,7 +10,7 @@ import ContractAddresses from "../../deployed-address.json";
 const SCUSDPage = () => {
   const [activeTab, setActiveTab] = useState("deposit");
   const [amount, setAmount] = useState("");
-  const [USBDBalance, setUSBDBalance] = useState("0");
+  const [USDCBalance, setUSDCBalance] = useState("0");
   const [sCUSDBalance, setSCUSDBalance] = useState("0");
   const [shareBalance, setShareBalance] = useState("0");
   const [vaultBalance, setVaultBalance] = useState("0");
@@ -38,7 +38,7 @@ const SCUSDPage = () => {
         functionName: "balanceOf",
         args: [address],
       })) as bigint;
-      setUSBDBalance(formatUnits(CUSDBalanceData, 18));
+      setUSDCBalance(formatUnits(CUSDBalanceData, 18));
 
       // Fetch sCUSD balance (shares)
       const shareBalanceData = (await publicClient.readContract({
@@ -146,7 +146,7 @@ const SCUSDPage = () => {
     }
 
     // Check if user has at least 10 CUSD
-    if (parseFloat(USBDBalance) < 10) {
+    if (parseFloat(USDCBalance) < 10) {
       showNotification("Insufficient CUSD balance. You need at least 10 CUSD to deposit.", "error");
       return;
     }
@@ -308,7 +308,7 @@ const SCUSDPage = () => {
             <p className="text-gray-300 mb-2">
               Your CUSD Balance:{" "}
               <span className="text-[#FF8C00] font-bold">
-                {formatNumber(USBDBalance)} CUSD
+                {formatNumber(USDCBalance)} CUSD
               </span>
             </p>
             <p className="text-gray-300 mb-2">
@@ -371,13 +371,13 @@ const SCUSDPage = () => {
           {activeTab === "deposit" ? (
             <button
               onClick={handleDeposit}
-              disabled={loading || parseFloat(USBDBalance) < 10}
-              className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${loading || parseFloat(USBDBalance) < 10 ? "opacity-50 cursor-not-allowed" : ""
+              disabled={loading || parseFloat(USDCBalance) < 10}
+              className={`w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${loading || parseFloat(USDCBalance) < 10 ? "opacity-50 cursor-not-allowed" : ""
                 } bg-black border border-[#FF8C00] shadow-[0_0_15px_rgba(255,140,0,0.7)] hover:shadow-[0_0_20px_rgba(255,140,0,1)] hover:text-[#FF8C00]`}
             >
               {loading
                 ? "Processing..."
-                : parseFloat(USBDBalance) < 10
+                : parseFloat(USDCBalance) < 10
                   ? "Insufficient CUSD Balance (Need 10+ CUSD)"
                   : "Deposit 10 CUSD"}
             </button>
@@ -399,7 +399,7 @@ const SCUSDPage = () => {
             About sCUSD Vault
           </h2>
           <p className="text-gray-300 mb-2">
-            sCUSD is an ERC4626 tokenized vault that accepts USBD deposits and
+            sCUSD is an ERC4626 tokenized vault that accepts USDC deposits and
             provides sCUSD shares in return.
           </p>
           <p className="text-gray-300">
