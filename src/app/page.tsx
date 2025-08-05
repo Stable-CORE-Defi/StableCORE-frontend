@@ -1102,7 +1102,7 @@ const HomePage = () => {
 
         {/* Flow Diagram - Full Width */}
         <div
-          className="w-full mt-20 bg-black p-8 rounded-lg border border-gray-800"
+          className="w-full mt-20 bg-black/90 backdrop-blur-md p-8 rounded-lg border border-gray-700"
           style={{
             backgroundImage:
               "radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px)",
@@ -1209,7 +1209,7 @@ const HomePage = () => {
                   {/* Step 1 - Mint */}
                   <div
                     onClick={() => setSelectedStep("mint")}
-                    className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative"
+                    className="flex items-start space-x-6 p-6 rounded-lg hover:bg-black/50 transition-all duration-300 cursor-pointer group relative"
                   >
                     <div className="flex-shrink-0 relative z-10">
                       <div className="w-16 h-16 rounded-lg border-2 border-gray-600 hover:border-[#FF8C00] transition-colors duration-300 flex items-center justify-center bg-black group-hover:bg-[#FF8C00] group-hover:text-black">
@@ -1229,7 +1229,7 @@ const HomePage = () => {
                   {/* Step 2 - CUSD */}
                   <div
                     onClick={() => setSelectedStep("cusd")}
-                    className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative"
+                    className="flex items-start space-x-6 p-6 rounded-lg hover:bg-black/50 transition-all duration-300 cursor-pointer group relative"
                   >
                     <div className="flex-shrink-0 relative z-10">
                       <div className="w-16 h-16 rounded-lg border-2 border-gray-600 hover:border-[#FF8C00] transition-colors duration-300 flex items-center justify-center bg-black group-hover:bg-[#FF8C00] group-hover:text-black">
@@ -1249,7 +1249,7 @@ const HomePage = () => {
                   {/* Step 3 - Restaking */}
                   <div
                     onClick={() => setSelectedStep("restaking")}
-                    className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative"
+                    className="flex items-start space-x-6 p-6 rounded-lg hover:bg-black/50 transition-all duration-300 cursor-pointer group relative"
                   >
                     <div className="flex-shrink-0 relative z-10">
                       <div className="w-16 h-16 rounded-lg border-2 border-gray-600 hover:border-[#FF8C00] transition-colors duration-300 flex items-center justify-center bg-black group-hover:bg-[#FF8C00] group-hover:text-black">
@@ -1268,7 +1268,7 @@ const HomePage = () => {
 
                   {/* Step 4 - Loan */}
                   <div
-                    className="flex items-start space-x-6 p-6 rounded-lg hover:bg-gray-900 transition-all duration-300 cursor-pointer group relative"
+                    className="flex items-start space-x-6 p-6 rounded-lg hover:bg-black/50 transition-all duration-300 cursor-pointer group relative"
                     onClick={() => setSelectedStep("loan")}
                   >
                     <div className="flex-shrink-0 relative z-10">
@@ -1292,7 +1292,7 @@ const HomePage = () => {
             {/* Right side - Dynamic content based on selected step */}
             <div className="w-1/2 pl-8">
               {selectedStep === "mint" && (
-                <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
+                <div className="bg-black/90 backdrop-blur-md border border-gray-700 p-6 rounded-lg shadow-lg bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
                   <h2 className="text-2xl font-bold mb-6 text-[#FF8C00] font-mono">
                     MINT STABLECOINS
                   </h2>
