@@ -13,14 +13,11 @@ const SwapPage = () => {
   const [toToken, setToToken] = useState("sCUSD");
   const [fromAmount, setFromAmount] = useState("");
   const [toAmount, setToAmount] = useState("");
-  const [slippage, setSlippage] = useState("0.5");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [USDCBalance, setUSDCBalance] = useState("0");
   const [sCUSDBalance, setSCUSDBalance] = useState("0");
-  const [exchangeRate, setExchangeRate] = useState("1.0");
-  const [gasEstimate, setGasEstimate] = useState("0");
 
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
@@ -61,11 +58,10 @@ const SwapPage = () => {
     }
   };
 
-  // Calculate exchange rate and preview
+  // Calculate preview
   const calculateSwap = async () => {
     if (!fromAmount || !publicClient) {
       setToAmount("");
-      setExchangeRate("1.0");
       return;
     }
 
@@ -73,7 +69,6 @@ const SwapPage = () => {
       const sCUSDAddress = getContractAddress("sCUSD", chainId);
       if (sCUSDAddress === '0x0000000000000000000000000000000000000000') {
         setToAmount(fromAmount); // 1:1 rate if contract not available
-        setExchangeRate("1.0");
         return;
       }
 
@@ -89,14 +84,9 @@ const SwapPage = () => {
 
       const sharesAmount = formatUnits(previewShares as bigint, 18);
       setToAmount(sharesAmount);
-      
-      // Calculate exchange rate
-      const rate = parseFloat(sharesAmount) / parseFloat(fromAmount);
-      setExchangeRate(rate.toFixed(4));
     } catch (err) {
       console.error("Error calculating swap:", err);
       setToAmount(fromAmount); // Fallback to 1:1
-      setExchangeRate("1.0");
     }
   };
 
@@ -198,16 +188,32 @@ const SwapPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-8">
-      <div className="container mx-auto max-w-2xl">
+    <div className="min-h-screen bg-black text-white p-8 relative">
+      {/* Dotted Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle, white 1px, transparent 1px)`,
+          backgroundSize: '20px 20px'
+        }}></div>
+      </div>
+      
+      <div className="container mx-auto max-w-2xl relative z-10">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 animate-fade-in">
           <h1 className="text-4xl font-bold text-[#FF8C00] mb-2">Swap Tokens</h1>
           <p className="text-gray-400">Trade USDC for sCUSD instantly</p>
         </div>
 
         {/* Main Swap Card */}
-        <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-8 shadow-2xl border border-gray-700">
+        <div className="bg-black/90 backdrop-blur-md rounded-3xl p-8 shadow-2xl border border-gray-700 animate-slide-up relative">
+          {/* Dotted Background Pattern for Swap Card */}
+          <div className="absolute inset-0 opacity-20 rounded-3xl overflow-hidden">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `radial-gradient(circle, white 1px, transparent 1px)`,
+              backgroundSize: '15px 15px'
+            }}></div>
+          </div>
+          <div className="relative z-10">
           {/* Network Info */}
           <div className="text-center mb-6">
             <span className="text-sm text-gray-400">Network: </span>
@@ -215,7 +221,7 @@ const SwapPage = () => {
           </div>
 
           {/* From Token */}
-          <div className="bg-gray-800 rounded-2xl p-6 mb-4 border border-gray-700">
+          <div className="bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 mb-3 border border-gray-700 animate-slide-up" style={{animationDelay: '0.1s'}}>
             <div className="flex justify-between items-center mb-2">
               <span className="text-gray-400 text-sm">From</span>
               <div className="flex items-center space-x-2">
@@ -235,29 +241,29 @@ const SwapPage = () => {
                   value={fromAmount}
                   onChange={handleFromAmountChange}
                   placeholder="0.0"
-                  className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder-gray-500"
+                  className="w-full bg-transparent text-2xl font-bold text-white outline-none placeholder-gray-500"
                 />
               </div>
-              <div className="flex items-center space-x-2 bg-gray-700 rounded-xl px-4 py-2">
-                <div className="w-8 h-8 bg-[#FF8C00] rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">U</span>
+              <div className="flex items-center space-x-2 bg-gray-700 rounded-lg px-3 py-1">
+                <div className="w-6 h-6 bg-[#FF8C00] rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">U</span>
                 </div>
-                <span className="font-semibold">USDC</span>
+                <span className="font-semibold text-sm">USDC</span>
               </div>
             </div>
           </div>
 
           {/* Swap Arrow */}
-          <div className="flex justify-center my-4">
-            <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center border-2 border-gray-600">
-              <svg className="w-6 h-6 text-[#FF8C00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex justify-center my-2">
+            <div className="w-8 h-8 bg-gray-700/80 backdrop-blur-sm rounded-full flex items-center justify-center border border-gray-600">
+              <svg className="w-4 h-4 text-[#FF8C00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
               </svg>
             </div>
           </div>
 
           {/* To Token */}
-          <div className="bg-gray-800 rounded-2xl p-6 mb-6 border border-gray-700">
+          <div className="bg-gray-800/60 backdrop-blur-sm rounded-xl p-4 mb-6 border border-gray-700 animate-slide-up" style={{animationDelay: '0.2s'}}>
             <div className="flex justify-between items-center mb-2">
               <span className="text-gray-400 text-sm">To</span>
               <span className="text-sm text-gray-400">Balance: {parseFloat(sCUSDBalance).toFixed(4)}</span>
@@ -269,39 +275,30 @@ const SwapPage = () => {
                   value={toAmount}
                   readOnly
                   placeholder="0.0"
-                  className="w-full bg-transparent text-3xl font-bold text-white outline-none placeholder-gray-500"
+                  className="w-full bg-transparent text-2xl font-bold text-white outline-none placeholder-gray-500"
                 />
               </div>
-              <div className="flex items-center space-x-2 bg-gray-700 rounded-xl px-4 py-2">
-                <div className="w-8 h-8 bg-[#FF6347] rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">S</span>
+              <div className="flex items-center space-x-2 bg-gray-700 rounded-lg px-3 py-1">
+                <div className="w-6 h-6 bg-[#FF6347] rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-xs">S</span>
                 </div>
-                <span className="font-semibold">sCUSD</span>
+                <span className="font-semibold text-sm">sCUSD</span>
               </div>
             </div>
           </div>
 
-          {/* Exchange Rate */}
-          <div className="bg-gray-800 rounded-xl p-4 mb-6 border border-gray-700">
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-400">Exchange Rate</span>
-              <span className="text-white">1 USDC = {exchangeRate} sCUSD</span>
-            </div>
-            <div className="flex justify-between items-center text-sm mt-1">
-              <span className="text-gray-400">Slippage Tolerance</span>
-              <span className="text-white">{slippage}%</span>
-            </div>
-          </div>
+
 
           {/* Swap Button */}
           <button
             onClick={handleSwap}
             disabled={loading || !fromAmount || !isConnected}
-            className={`w-full py-4 rounded-2xl font-bold text-lg transition-all duration-300 ${
+            className={`w-full py-4 rounded-2xl font-bold text-lg transition-all duration-500 animate-slide-up ${
               loading || !fromAmount || !isConnected
                 ? "bg-gray-700 text-gray-500 cursor-not-allowed"
                 : "bg-gradient-to-r from-[#FF8C00] to-[#FF6347] text-white hover:from-[#FFA500] hover:to-[#FF8C00] transform hover:scale-105"
             }`}
+            style={{animationDelay: '0.5s'}}
           >
             {loading ? (
               <div className="flex items-center justify-center space-x-2">
@@ -319,30 +316,38 @@ const SwapPage = () => {
 
           {/* Error/Success Messages */}
           {error && (
-            <div className="mt-4 p-4 bg-red-900/20 border border-red-500 rounded-xl text-red-400">
+            <div className="mt-4 p-4 bg-red-900/20 border border-red-500 rounded-xl text-red-400 animate-slide-up" style={{animationDelay: '0.6s'}}>
               {error}
             </div>
           )}
           {success && (
-            <div className="mt-4 p-4 bg-green-900/20 border border-green-500 rounded-xl text-green-400">
+            <div className="mt-4 p-4 bg-green-900/20 border border-green-500 rounded-xl text-green-400 animate-slide-up" style={{animationDelay: '0.6s'}}>
               {success}
             </div>
           )}
+          </div>
         </div>
 
-        {/* Info Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-          <div className="bg-gray-900 rounded-2xl p-6 border border-gray-700">
-            <h3 className="text-lg font-semibold text-[#FF8C00] mb-3">About USDC</h3>
-            <p className="text-gray-400 text-sm">
-              USDC is a stablecoin pegged to the US Dollar. It's used as the base asset for trading and lending in the StableCORE ecosystem.
-            </p>
-          </div>
-          <div className="bg-gray-900 rounded-2xl p-6 border border-gray-700">
-            <h3 className="text-lg font-semibold text-[#FF6347] mb-3">About sCUSD</h3>
-            <p className="text-gray-400 text-sm">
-              sCUSD represents shares in the CUSD vault. By swapping USDC for sCUSD, you're depositing into the vault and earning yield.
-            </p>
+        {/* Info Card */}
+        <div className="mt-8">
+          <div className="bg-black/90 backdrop-blur-md rounded-2xl p-6 border border-gray-700 animate-slide-up hover:scale-105 transition-transform duration-500 relative" style={{animationDelay: '0.7s'}}>
+            {/* Dotted Background Pattern for Info Card */}
+            <div className="absolute inset-0 opacity-20 rounded-2xl overflow-hidden">
+              <div className="absolute inset-0" style={{
+                backgroundImage: `radial-gradient(circle, white 1px, transparent 1px)`,
+                backgroundSize: '15px 15px'
+              }}></div>
+            </div>
+            <div className="relative z-10">
+              <h3 className="text-lg font-semibold text-[#FF8C00] mb-3">About USDC</h3>
+              <p className="text-gray-400 text-sm mb-4">
+                USDC is a stablecoin pegged to the US Dollar. It's used as the base asset for trading and lending in the StableCORE ecosystem.
+              </p>
+              <h3 className="text-lg font-semibold text-[#FF6347] mb-3">About sCUSD</h3>
+              <p className="text-gray-400 text-sm">
+                sCUSD represents shares in the CUSD vault. By swapping USDC for sCUSD, you're depositing into the vault and earning yield.
+              </p>
+            </div>
           </div>
         </div>
       </div>
