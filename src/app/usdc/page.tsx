@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useAccount, usePublicClient, useWalletClient, useChainId } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 
-import USDCJson from "@/contracts/USDC.sol/USDC.json";
+import USDCJson from "@/contracts/USDC/USDC.json";
 import { getContractAddress, supportedChains } from "../../config";
 import ContractAddresses from "../../deployed-address.json";
 
