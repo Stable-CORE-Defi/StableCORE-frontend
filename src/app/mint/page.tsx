@@ -118,7 +118,7 @@ const MintPage = () => {
       const { request } = await publicClient.simulateContract({
         address: USDCAddress as `0x${string}`,
         abi: USDCJson.abi,
-        functionName: "mintToCUSD",
+        functionName: "mint",
         args: [USDCAmountUnits],
         account: address,
       });
