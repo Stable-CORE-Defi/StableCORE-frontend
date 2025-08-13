@@ -6,6 +6,7 @@ import { parseUnits, formatUnits } from "viem";
 import sCUSDJson from "@/contracts/sCUSD.sol/sCUSD.json";
 import CUSDJson from "@/contracts/CUSD.sol/CUSD.json";
 import ContractAddresses from "../../deployed-address.json";
+import MintCusdButton from "../components/MintCusdButton";
 
 const SCUSDPage = () => {
   const [activeTab, setActiveTab] = useState("deposit");
@@ -280,6 +281,19 @@ const SCUSDPage = () => {
           </div>
         )}
 
+        {/* Mint cUSD Section */}
+        <div className="mb-6">
+          <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
+            <h2 className="text-xl font-bold mb-4 text-[#FF8C00] font-mono">
+              Mint cUSD
+            </h2>
+            <p className="text-gray-300 mb-4">
+              Need cUSD to stake? Mint some cUSD tokens first using the two-step process below.
+            </p>
+            <MintCusdButton onMintComplete={fetchVaultData} />
+          </div>
+        </div>
+
         <div className="bg-black border border-gray-800 p-6 rounded-lg shadow-lg backdrop-blur-sm bg-[radial-gradient(#333_1px,transparent_1px)] bg-[size:10px_10px]">
           {/* Tabs */}
           <div className="flex mb-6 border-b border-gray-800">
@@ -305,6 +319,16 @@ const SCUSDPage = () => {
 
           {/* Balances */}
           <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-[#FF8C00]">Your Balances</h3>
+              <button
+                onClick={fetchVaultData}
+                className="text-xs bg-gray-700 px-3 py-1 rounded text-gray-300 hover:bg-gray-600 transition-colors"
+                title="Refresh balances"
+              >
+                🔄 Refresh
+              </button>
+            </div>
             <p className="text-gray-300 mb-2">
               Your CUSD Balance:{" "}
               <span className="text-[#FF8C00] font-bold">

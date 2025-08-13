@@ -33,42 +33,42 @@ const Navbar = () => {
         </div>
 
         <div className="hidden md:flex space-x-8">
-          <Link
+          {/* <Link
             href="/mint"
             className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
             MINT
-          </Link>
-          <Link
+          </Link> */}
+          {/* <Link
             href="/admin"
             className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
             ADMIN
-          </Link>
+          </Link> */}
           <Link
             href="/operator-screen"
             className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
             OPERATOR
           </Link>
-          <Link
+          {/* <Link
             href="/restaking-screen"
             className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
             RESTAKING
-          </Link>
-          <Link
+          </Link> */}
+          {/* <Link
             href="/cpusd"
             className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
             SCUSD
-          </Link>
-          <Link
+          </Link> */}
+          {/* <Link
             href="/usdc"
             className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
           >
             USDC
-          </Link>
+          </Link> */}
           <Link
             href="/swap"
             className="font-medium tracking-wide hover:text-[#FF8C00] transition duration-300"
