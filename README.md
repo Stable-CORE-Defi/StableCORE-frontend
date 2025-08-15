@@ -1,63 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StableCORE
 
-## Getting Started
+**StableCORE** – A credibly-secure, Core-native stablecoin engine built for capital efficiency, modular yield, and on-chain transparency.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Vision & Architecture Overview
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 1. Vision Statement
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+StableCORE is a Core-native, credibly secure, and fully collateralized stablecoin designed to become the foundational stable asset within the Core blockchain ecosystem. It provides a trust-minimized, yield-optional, and composable dollar-denominated token—built for users, protocols, and institutions seeking transparent financial primitives on Core.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+By leveraging Core’s hybrid consensus and Bitcoin-derived security guarantees, StableCORE is optimized for scalability, decentralization, and integration into the next generation of on-chain finance.
 
-## Network Switching & USDC Minting
+---
 
-This application supports switching between Hardhat local network and Core Testnet2. The network switching functionality has been implemented with the following features:
+### 2. Design Principles
 
-### Network Switching
-- **Navbar Network Switcher**: Use the network buttons in the navbar to switch between Hardhat and Core Testnet2
-- **Dynamic Contract Addresses**: Contract addresses automatically update based on the selected network
-- **Balance Polling**: Balances are automatically refreshed every 5 seconds and when switching networks
+| Principle           | Description                                                                                                   |
+|---------------------|--------------------------------------------------------------------------------------------------------------|
+| **Credibly Secure** | All reserves and mechanics are governed by transparent, deterministic smart contracts. No user funds are exposed to discretionary risks or black-box financial behavior. |
+| **Fully Collateralized** | Every StableCORE token is backed 1:1 by on-chain reserve assets, including Core-native USDC/USDT and lstBTC. |
+| **Yield-Optional**  | Users may opt into yield-bearing strategies backed by performance-guaranteed agents, without impacting the peg or solvency of the base stablecoin. |
+| **Trust-Minimized Guarantees** | A slashing-based model ensures that operational failures are absorbed by collateral providers, not end-users. This eliminates governance subjectivity and ensures objective enforcement. |
+| **Composable & Modular** | Designed to integrate seamlessly with Core DeFi: AMMs, lending markets, derivatives, and staking ecosystems. |
 
-### USDC Minting
-- **Dynamic Contract Resolution**: USDC contract addresses are resolved based on the current network
-- **Real-time Balance Updates**: Balance is automatically updated after minting transactions
-- **Transaction Status**: Shows transaction hash and status during minting
-- **Error Handling**: Proper error messages for network-specific issues
+---
 
-### Testing USDC Minting
-1. Connect your wallet
-2. Switch to the desired network (Hardhat or Core Testnet2) using the navbar buttons
-3. Navigate to the USDC page (`/usdc`) or use the mint page (`/mint`)
-4. Enter the amount to mint
-5. Click "Mint USDC"
-6. The balance should update automatically after the transaction completes
+### 3. Architecture & Workflow
 
-### Supported Networks
-- **Hardhat (Chain ID: 31337)**: Local development network
-- **Core Testnet2 (Chain ID: 84532)**: Core blockchain testnet
+#### 3.1 Base Stablecoin Layer
+- **Minting:** Users deposit reserve assets (e.g., USDC, USDT, lstBTC) into the StableCORE vault contract to mint StableCORE tokens 1:1.
+- **Redemption:** At any time, users may burn StableCORE to retrieve the equivalent amount of reserve tokens.
+- **Reserves:** All reserves are held transparently in Core-native contracts—auditable, non-custodial, and overcollateralized if needed.
 
-## Learn More
+#### 3.2 Optional Yield Layer
+- Users may stake StableCORE into structured yield vaults, operated by agents who deploy capital into whitelisted strategies (e.g., MEV capture, LST arbitrage, RWA yield).
+- These operators must be guaranteed by restakers, who post collateral to underwrite operator performance.
+- In case of underperformance or failure, smart contracts automatically slash restaker collateral to make users whole.
 
-To learn more about Next.js, take a look at the following resources:
+#### 3.3 Slashing & Enforcement Mechanism
+- Smart contracts enforce strict risk thresholds and performance metrics.
+- Any deviation from pre-defined strategy results in slashing.
+- No human intervention required; enforcement is fully deterministic and rules-based.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 4. Governance & Evolution
 
-## Deploy on Vercel
+- **Phase 1:** Launch with controlled governance via multisig of CoreDAO-aligned members.
+- **Phase 2:** Transition to on-chain, community-driven DAO governance.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Governance Powers:**
+- Adjust reserve ratios
+- Whitelist strategy types
+- Update agent/restaker requirements
+- Manage fee structures
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+### 5. Ecosystem Integration
+
+- **Stable Asset for Core DeFi:** StableCORE will power Core-native liquidity pools, lending protocols, derivatives, and payment rails.
+- **Yield Primitive:** Yield-bearing versions of StableCORE can serve as collateral, funding instruments, or revenue-bearing assets.
+- **Composable Guarantees:** Restakers and operators can be modular components plugged into existing Core protocol infrastructure.
+
+---
+
+### 6. Roadmap
+
+| Phase      | Objectives                                                                                       |
+|------------|--------------------------------------------------------------------------------------------------|
+| **Q3 2025** | Launch MVP of StableCORE with stable reserve backing (USDC/USDT). Deploy base mint/redeem contracts on Core Mainnet. |
+| **Q4 2025** | Integrate lstBTC as collateral. Launch slashing mechanism and yield-optional vaults. Begin restaker onboarding. |
+| **Q1 2026** | Enable DAO governance. Open up new operator classes and deploy composable yield infrastructure. |
+| **Q2 2026+** | Expand cross-chain access, deploy HTLC-based atomic swaps, and integrate further Core-native financial protocols. |
+
+---
+
+### 7. Strategic Value
+
+- **Network-Optimized:** StableCORE is purpose-built for Core’s architecture, enabling fast, low-cost transactions and seamless DeFi composability.
+- **Security Inheritance from Bitcoin:** As a Core-native application, StableCORE benefits from Core’s Satoshi Plus consensus and indirect Bitcoin security.
+- **Decentralized Risk Management:** Users are never exposed to the performance risk of operators. Restakers serve as decentralized insurers, creating a robust financial firewall.
+- **Economic Multiplicity:** By splitting stablecoin utility and yield into separate layers, StableCORE supports diverse user profiles—risk-averse holders and yield-seeking stakers alike.
+
+---
+
+## 🔄 Future Vision
+
+Over time, StableCORE will evolve into a full-scale operator and financial coordination layer, integrating Core-native protocols, liquid staking tokens (LSTs), and decentralized strategy networks into a single, composable stablecoin engine.
