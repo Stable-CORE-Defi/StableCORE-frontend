@@ -88,7 +88,7 @@ const Navbar = () => {
           <div className="flex items-center space-x-2">
             <span className="text-sm text-gray-300">Network:</span>
             <div className="flex space-x-1">
-              <button
+              {/* <button
                 onClick={() => handleNetworkSwitch(supportedChains.hardhat.id)}
                 className={`px-2 py-1 text-xs rounded ${chainId === supportedChains.hardhat.id
                   ? "bg-[#FF8C00] text-black"
@@ -96,7 +96,7 @@ const Navbar = () => {
                   } transition-colors`}
               >
                 Hardhat
-              </button>
+              </button> */}
               <button
                 onClick={() => handleNetworkSwitch(supportedChains.coreTestnet2.id)}
                 className={`px-2 py-1 text-xs rounded ${chainId === supportedChains.coreTestnet2.id
