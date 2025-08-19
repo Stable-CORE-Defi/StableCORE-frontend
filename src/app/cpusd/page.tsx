@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 import sCUSDJson from "@/contracts/sCUSD.sol/sCUSD.json";
@@ -28,7 +28,7 @@ const SCUSDPage = () => {
   const { data: walletClient } = useWalletClient();
 
   // Fetch balances and conversion rate
-  const fetchVaultData = async () => {
+  const fetchVaultData = useCallback(async () => {
     if (!address || !publicClient) return;
 
     try {
@@ -102,13 +102,13 @@ const SCUSDPage = () => {
     } catch (err) {
       console.error("Error fetching vault data:", err);
     }
-  };
+  }, [address, publicClient, activeTab]);
 
   useEffect(() => {
     if (isConnected && address && publicClient) {
       fetchVaultData();
     }
-  }, [address, isConnected, publicClient, activeTab]);
+  }, [address, isConnected, publicClient, activeTab, fetchVaultData]);
 
   // Handle withdraw preview when amount changes
   useEffect(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 import stCOREJson from "@/contracts/stCORE.sol/stCORE.json";
@@ -26,7 +26,7 @@ const RestakingScreen = () => {
   const { data: walletClient } = useWalletClient();
 
   // Fetch stCORE balance
-  const fetchBalance = async () => {
+  const fetchBalance = useCallback(async () => {
     if (!address || !publicClient) return;
 
     try {
@@ -56,14 +56,14 @@ const RestakingScreen = () => {
     } catch (err) {
       console.error("Error fetching balance:", err);
     }
-  };
+  }, [address, publicClient]);
 
   // Fetch balance on mount and when address changes
   useEffect(() => {
     if (isConnected && address && publicClient) {
       fetchBalance();
     }
-  }, [address, isConnected, publicClient]);
+  }, [address, isConnected, publicClient, fetchBalance]);
 
   // Handle amount input change
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {

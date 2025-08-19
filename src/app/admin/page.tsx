@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { formatUnits } from "viem";
 import LoanManagerJson from "@/contracts/LoanManager.sol/LoanManager.json";
@@ -60,16 +60,16 @@ export default function CapAdminScreen() {
       await publicClient.waitForTransactionReceipt({ hash });
 
       showNotification(`Successfully slashed operator`, "success");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error slashing operator:", error);
-      showNotification(error.message || "Failed to slash operator", "error");
+      showNotification(error instanceof Error ? error.message : "Failed to slash operator", "error");
     } finally {
       setIsLoading(false);
     }
   };
 
   // Add this function to fetch the operator's delegated stCORE
-  const fetchOperatorDelegation = async () => {
+  const fetchOperatorDelegation = useCallback(async () => {
     if (!publicClient) return;
 
     try {
@@ -88,14 +88,14 @@ export default function CapAdminScreen() {
       // If there's an error, we'll show 0 stCORE
       setOperatorDelegation("0");
     }
-  };
+  }, [publicClient, address]);
 
   // Call this in useEffect
   useEffect(() => {
     if (publicClient) {
       fetchOperatorDelegation();
     }
-  }, [publicClient]);
+  }, [publicClient, fetchOperatorDelegation]);
 
   return (
     <div className="min-h-screen bg-black text-white pt-10 pb-20">

@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAccount, usePublicClient, useWalletClient, useChainId } from "wagmi";
-import { parseUnits, formatUnits } from "viem";
+import { formatUnits } from "viem";
 import CUSDJson from "@/contracts/CUSD.sol/CUSD.json";
 import LoanManagerJson from "@/contracts/LoanManager.sol/LoanManager.json";
 import ContractAddresses from "../../deployed-address.json";
@@ -34,57 +34,6 @@ interface LoanContractResponse {
   6: bigint; // loanedUSDCAmount
 }
 
-// Mock data for RWA
-const rwaData = {
-  currentYield: "5.93",
-  baseYield: "3.50",
-  restaking: {
-    totalRestaked: "15,000",
-    loanTaken: "8,500",
-    loanAvailable: "6,500",
-  },
-  assets: [
-    {
-      id: 1,
-      name: "US Treasury Bond",
-      amount: "10,000",
-      yield: "4.2%",
-      value: "10,250",
-    },
-    {
-      id: 2,
-      name: "Corporate Bond ETF",
-      amount: "5,000",
-      yield: "5.8%",
-      value: "5,120",
-    },
-    {
-      id: 3,
-      name: "Real Estate Fund",
-      amount: "15,000",
-      yield: "7.1%",
-      value: "15,600",
-    },
-  ],
-  opportunities: [
-    {
-      name: "US Treasury Bonds",
-      description: "Low risk government securities",
-      yield: "4.2%",
-    },
-    {
-      name: "Corporate Bond ETF",
-      description: "Diversified corporate debt",
-      yield: "5.8%",
-    },
-    {
-      name: "Real Estate Fund",
-      description: "Commercial property portfolio",
-      yield: "7.1%",
-    },
-  ],
-};
-
 export default function OperatorScreen() {
   const [repayAmount, setRepayAmount] = useState("");
   const [loanDetails, setLoanDetails] = useState<LoanDetails | null>(null);
@@ -94,8 +43,6 @@ export default function OperatorScreen() {
     message: "",
     type: "",
   });
-  const [USDCBalance, setUSDCBalance] = useState("0");
-  const [operatorBalance, setOperatorBalance] = useState("0");
   const [delegatedAmount, setDelegatedAmount] = useState("0");
   const [delegatedAmountLoading, setDelegatedAmountLoading] = useState(false);
 
@@ -104,77 +51,9 @@ export default function OperatorScreen() {
   const { data: walletClient } = useWalletClient();
   const chainId = useChainId();
 
-  // Fetch balances and active loans
-  useEffect(() => {
-    if (isConnected && address && publicClient) {
-      fetchBalances();
-      fetchActiveLoans();
-      fetchOperatorBalance();
-      fetchRepaymentAmount();
-    }
-  }, [address, isConnected, publicClient]);
-
-  // Update repayment amount when loan details change
-  useEffect(() => {
-    if (loanDetails && !loanDetails.isRepaid && parseFloat(loanDetails.amount) > 0) {
-      fetchRepaymentAmount();
-    }
-  }, [loanDetails]);
-
-  // Debug effect to log delegated amount changes
-  useEffect(() => {
-    console.log("Delegated amount updated:", delegatedAmount);
-  }, [delegatedAmount]);
-
-  // Function to retry fetching delegated amount
-  const retryFetchDelegatedAmount = async () => {
-    if (!address || !publicClient) return;
-
-    setDelegatedAmountLoading(true);
-    try {
-      const eigenAddress = getContractAddress("Eigen", chainId);
-
-      if (eigenAddress === '0x0000000000000000000000000000000000000000') {
-        console.error("Eigen contract not available on current network");
-        setDelegatedAmount("0");
-        return;
-      }
-
-      const delegatedData = await publicClient.readContract({
-        address: eigenAddress as `0x${string}`,
-        abi: EigenJson.abi,
-        functionName: "getDelegatedAmount",
-        args: [address],
-      });
-
-      setDelegatedAmount(formatUnits(delegatedData as bigint, 18));
-      console.log("Delegated amount retry successful:", formatUnits(delegatedData as bigint, 18));
-    } catch (err) {
-      console.error("Error retrying delegated amount fetch:", err);
-      setDelegatedAmount("0");
-    } finally {
-      setDelegatedAmountLoading(false);
-    }
-  };
-
   // Fetch stCORE and USDC balances
-  const fetchBalances = async () => {
+  const fetchBalances = useCallback(async () => {
     if (!address || !publicClient) return;
-
-    try {
-      // Fetch USDC balance
-      const USDCBalanceData = await publicClient.readContract({
-        address: ContractAddresses.CUSD as `0x${string}`,
-        abi: CUSDJson.abi,
-        functionName: "balanceOf",
-        args: [address],
-      });
-
-      setUSDCBalance(formatUnits(USDCBalanceData as bigint, 18));
-    } catch (err) {
-      console.error("Error fetching USDC balance:", err);
-      setUSDCBalance("0");
-    }
 
     // Fetch delegated amount from Eigen contract separately to ensure it's always attempted
     setDelegatedAmountLoading(true);
@@ -184,8 +63,8 @@ export default function OperatorScreen() {
       if (eigenAddress === '0x0000000000000000000000000000000000000000') {
         console.error("Eigen contract not available on current network");
         setDelegatedAmount("0");
-        return;
-      }
+      return;
+    }
 
       const delegatedData = await publicClient.readContract({
         address: eigenAddress as `0x${string}`,
@@ -202,10 +81,10 @@ export default function OperatorScreen() {
     } finally {
       setDelegatedAmountLoading(false);
     }
-  };
+  }, [address, publicClient, chainId]);
 
   // Fetch active loan details directly
-  const fetchActiveLoans = async () => {
+  const fetchActiveLoans = useCallback(async () => {
     if (!address || !publicClient) return;
 
     try {
@@ -251,28 +130,28 @@ export default function OperatorScreen() {
     } catch (err) {
       console.error("Error fetching active loan:", err);
     }
-  };
+  }, [address, publicClient, chainId, delegatedAmount]);
 
   // Fetch operator balance
-  const fetchOperatorBalance = async () => {
+  const fetchOperatorBalance = useCallback(async () => {
     if (!publicClient) return;
 
     try {
-      const operatorBalanceData = await publicClient.readContract({
+      await publicClient.readContract({
         address: ContractAddresses.CUSD as `0x${string}`,
         abi: CUSDJson.abi,
         functionName: "balanceOf",
         args: [ContractAddresses.Operator],
       });
 
-      setOperatorBalance(formatUnits(operatorBalanceData as bigint, 18));
+      // Removed unused variables 'operatorBalanceData' and 'balance'.
     } catch (err) {
       console.error("Error fetching operator balance:", err);
     }
-  };
+  }, [publicClient]);
 
   // Fetch repayment amount from LoanManager
-  const fetchRepaymentAmount = async () => {
+  const fetchRepaymentAmount = useCallback(async () => {
     if (!publicClient) return;
 
     try {
@@ -304,7 +183,60 @@ export default function OperatorScreen() {
       console.error("Error fetching repayment amount:", err);
       setRepayAmount("0");
     }
-  };
+  }, [publicClient, chainId]);
+
+  // Fetch balances and active loans
+  useEffect(() => {
+    if (isConnected && address && publicClient) {
+      fetchBalances();
+      fetchActiveLoans();
+      fetchOperatorBalance();
+      fetchRepaymentAmount();
+    }
+  }, [address, isConnected, publicClient, fetchBalances, fetchActiveLoans, fetchOperatorBalance, fetchRepaymentAmount]);
+
+  // Update repayment amount when loan details change
+  useEffect(() => {
+    if (loanDetails && !loanDetails.isRepaid && parseFloat(loanDetails.amount) > 0) {
+      fetchRepaymentAmount();
+    }
+  }, [loanDetails, fetchRepaymentAmount]);
+
+  // Debug effect to log delegated amount changes
+  useEffect(() => {
+    console.log("Delegated amount updated:", delegatedAmount);
+  }, [delegatedAmount]);
+
+  // Function to retry fetching delegated amount
+  const retryFetchDelegatedAmount = useCallback(async () => {
+    if (!address || !publicClient) return;
+
+    setDelegatedAmountLoading(true);
+    try {
+      const eigenAddress = getContractAddress("Eigen", chainId);
+
+      if (eigenAddress === '0x0000000000000000000000000000000000000000') {
+        console.error("Eigen contract not available on current network");
+        setDelegatedAmount("0");
+      return;
+    }
+
+      const delegatedData = await publicClient.readContract({
+        address: eigenAddress as `0x${string}`,
+        abi: EigenJson.abi,
+        functionName: "getDelegatedAmount",
+        args: [address],
+      });
+
+      setDelegatedAmount(formatUnits(delegatedData as bigint, 18));
+      console.log("Delegated amount retry successful:", formatUnits(delegatedData as bigint, 18));
+    } catch (err) {
+      console.error("Error retrying delegated amount fetch:", err);
+      setDelegatedAmount("0");
+    } finally {
+      setDelegatedAmountLoading(false);
+    }
+  }, [address, publicClient, chainId]);
 
   // Show notification
   const showNotification = (message: string, type: string) => {
@@ -322,61 +254,12 @@ export default function OperatorScreen() {
   };
 
   // Handle repay loan action
-  const handleRepayLoan = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!repayAmount || parseFloat(repayAmount) <= 0) {
-      showNotification("Please enter a valid repayment amount", "error");
-      return;
-    }
-
-    if (!walletClient || !publicClient) {
-      showNotification("Wallet not connected properly", "error");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const loanManagerAddress = getContractAddress("LoanManager", chainId);
-      if (loanManagerAddress === '0x0000000000000000000000000000000000000000') {
-        showNotification("LoanManager contract not available on current network", "error");
-        setIsLoading(false);
-        return;
-      }
-
-      // Now call repayLoan on LoanManager contract
-      const { request } = await publicClient.simulateContract({
-        address: loanManagerAddress as `0x${string}`,
-        abi: LoanManagerJson.abi,
-        functionName: "repayLoan",
-        args: [],
-        account: address,
-      });
-
-      const hash = await walletClient.writeContract(request);
-      await publicClient.waitForTransactionReceipt({ hash });
-
-      // Update balances and loans
-      fetchBalances();
-      fetchActiveLoans();
-
-      showNotification(`Successfully repaid loan`, "success");
-      setRepayAmount("");
-    } catch (error: unknown) {
-      console.error("Error repaying loan:", error);
-      showNotification(
-        error instanceof Error ? error.message : "Failed to repay loan",
-        "error"
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Removed unused function 'handleRepayLoan'
 
 
 
   // Add this function to handle slashing the operator
-  const handleSlashOperator = async () => {
+  const handleSlashOperator = useCallback(async () => {
     if (!walletClient || !publicClient || !address) {
       showNotification("Wallet not connected properly", "error");
       return;
@@ -418,7 +301,7 @@ export default function OperatorScreen() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [walletClient, publicClient, address, chainId, fetchBalances, fetchActiveLoans, fetchOperatorBalance]);
 
   return (
     <div className="min-h-screen bg-black text-white pt-10 pb-20">
@@ -437,7 +320,7 @@ export default function OperatorScreen() {
                 }}
               >
                 OPERATOR DASHBOARD
-              </h1>
+        </h1>
               <p className="text-xl text-gray-300">
                 Manage your loans and collateral
               </p>
@@ -452,8 +335,8 @@ export default function OperatorScreen() {
                 showDelegated={true}
               />
             </div>
-          </div>
-
+            </div>
+            
           {/* Notification */}
           {notification.show && (
             <div
@@ -469,8 +352,8 @@ export default function OperatorScreen() {
           {/* Combined View Only - No Tabs */}
           <div className="mb-8">
             <h2 className="text-2xl font-bold text-[#FF8C00] mb-4">Operator Dashboard</h2>
-          </div>
-
+            </div>
+            
           {/* Combined View Content */}
           <div className="space-y-8">
             {/* Loan Management Card */}
@@ -489,10 +372,10 @@ export default function OperatorScreen() {
                 <div className="space-y-4">
                   {/* Operator CUSD Balance Component */}
                   <OperatorCUSDBalance
-                    onBalanceUpdate={(balance) => setOperatorBalance(balance)}
+                    onBalanceUpdate={() => {}}
                     onMintSuccess={() => {
                       fetchBalances();
-                      fetchOperatorBalance();
+                      // fetchOperatorBalance(); // Removed unused variable
                     }}
                     onMintError={(error: string) => {
                       showNotification(error, "error");
@@ -531,8 +414,8 @@ export default function OperatorScreen() {
                         </>
                       )}
                     </div>
-                  </div>
-
+        </div>
+        
                   {/* Required Delegation for 10 cUSD Loan */}
                   <div className="bg-gray-900 bg-opacity-50 p-4 rounded-lg">
                     <h3 className="text-lg font-semibold mb-3 text-white">Required for 10 cUSD Loan</h3>
@@ -541,8 +424,8 @@ export default function OperatorScreen() {
                       <p className="text-gray-400 text-sm">150% collateral ratio</p>
                     </div>
                   </div>
-                </div>
-
+        </div>
+        
                 {/* Actions */}
                 <div className="space-y-4">
                   {loanDetails && !loanDetails.isRepaid && parseFloat(loanDetails.amount) > 0 ? (
@@ -564,13 +447,13 @@ export default function OperatorScreen() {
                               showNotification(error, "error");
                             }}
                           />
-                          <button
+          <button 
                             onClick={handleSlashOperator}
                             disabled={isLoading}
                             className="w-full bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
-                          >
+          >
                             {isLoading ? "Processing..." : "Slash Operator"}
-                          </button>
+          </button>
                         </div>
                       </div>
                     </div>

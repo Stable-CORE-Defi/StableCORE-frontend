@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useAccount, usePublicClient, useWalletClient, useChainId } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
@@ -163,7 +163,7 @@ const MintAndRestakeButton: React.FC<MintAndRestakeButtonProps> = ({ onComplete,
     const [error, setError] = useState<string | null>(null);
 
     // Fetch delegated amount
-    const fetchDelegatedAmount = async () => {
+    const fetchDelegatedAmount = useCallback(async () => {
         if (!address || !publicClient) return;
 
         try {
@@ -187,23 +187,59 @@ const MintAndRestakeButton: React.FC<MintAndRestakeButtonProps> = ({ onComplete,
             console.error("Error fetching delegated amount:", err);
             setDelegatedAmount("0");
         }
-    };
+    }, [address, publicClient, chainId]);
 
     // Fetch delegated amount on mount and when address changes
     useEffect(() => {
         if (isConnected && address && publicClient) {
             fetchDelegatedAmount();
         }
-    }, [address, isConnected, publicClient]);
+    }, [address, isConnected, publicClient, fetchDelegatedAmount]);
 
     // Handle step 1 completion
+    const handleStep2 = useCallback(async () => {
+        if (!address || !walletClient || !publicClient || step !== 2) return;
+
+        setIsStep2Loading(true);
+
+        try {
+            const eigenAddress = getContractAddress("Eigen", chainId);
+
+            if (eigenAddress === '0x0000000000000000000000000000000000000000') {
+                setError("Eigen contract not available on current network");
+                setStep(1);
+                return;
+            }
+
+            // Delegate 10 stCORE to the operator
+            const { request } = await publicClient.simulateContract({
+                address: eigenAddress as `0x${string}`,
+                abi: EigenJson.abi,
+                functionName: "addDelegation",
+                args: [parseUnits("10", 18)],
+                account: address,
+            });
+
+            const hash = await walletClient.writeContract(request);
+            setStep2Hash(hash);
+
+            // Wait for transaction to complete
+            await publicClient.waitForTransactionReceipt({ hash });
+        } catch (error) {
+            console.error("Error delegating stCORE:", error);
+            setError(error instanceof Error ? error.message : "Failed to delegate stCORE");
+            setStep(1);
+        } finally {
+            setIsStep2Loading(false);
+        }
+    }, [address, walletClient, publicClient, step, chainId]);
+
     useEffect(() => {
         if (step1Hash && !isStep1Loading) {
             setStep(2);
-            // Trigger step 2 automatically
             handleStep2();
         }
-    }, [step1Hash, isStep1Loading, step]);
+    }, [step1Hash, isStep1Loading, step, handleStep2]);
 
     // Handle step 2 completion
     useEffect(() => {
@@ -262,43 +298,6 @@ const MintAndRestakeButton: React.FC<MintAndRestakeButtonProps> = ({ onComplete,
             setStep(0);
         } finally {
             setIsStep1Loading(false);
-        }
-    };
-
-    const handleStep2 = async () => {
-        if (!address || !walletClient || !publicClient || step !== 2) return;
-
-        setIsStep2Loading(true);
-
-        try {
-            const eigenAddress = getContractAddress("Eigen", chainId);
-
-            if (eigenAddress === '0x0000000000000000000000000000000000000000') {
-                setError("Eigen contract not available on current network");
-                setStep(1);
-                return;
-            }
-
-            // Delegate 10 stCORE to the operator
-            const { request } = await publicClient.simulateContract({
-                address: eigenAddress as `0x${string}`,
-                abi: EigenJson.abi,
-                functionName: "addDelegation",
-                args: [parseUnits("10", 18)],
-                account: address,
-            });
-
-            const hash = await walletClient.writeContract(request);
-            setStep2Hash(hash);
-
-            // Wait for transaction to complete
-            await publicClient.waitForTransactionReceipt({ hash });
-        } catch (error) {
-            console.error("Error delegating stCORE:", error);
-            setError(error instanceof Error ? error.message : "Failed to delegate stCORE");
-            setStep(1);
-        } finally {
-            setIsStep2Loading(false);
         }
     };
 

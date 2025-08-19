@@ -16,15 +16,6 @@ const Navbar = () => {
     }
   };
 
-  const getCurrentNetworkName = () => {
-    if (chainId === supportedChains.coreTestnet2.id) {
-      return "Core Testnet2";
-    } else if (chainId === supportedChains.hardhat.id) {
-      return "Hardhat";
-    }
-    return "Unknown Network";
-  };
-
   return (
     <nav className="bg-black text-white p-8">
       <div className="container mx-auto flex justify-between items-center">

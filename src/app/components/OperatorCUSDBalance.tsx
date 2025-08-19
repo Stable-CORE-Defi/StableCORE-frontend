@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { usePublicClient, useWalletClient, useAccount, useChainId } from "wagmi";
 import { formatUnits, parseUnits } from "viem";
 import CUSDJson from "../../contracts/CUSD.sol/CUSD.json";
@@ -33,7 +33,7 @@ export default function OperatorCUSDBalance({ onBalanceUpdate, onMintSuccess, on
     };
 
     // Fetch operator balance
-    const fetchOperatorBalance = async () => {
+    const fetchOperatorBalance = useCallback(async () => {
         if (!publicClient) return;
 
         setLoading(true);
@@ -62,7 +62,7 @@ export default function OperatorCUSDBalance({ onBalanceUpdate, onMintSuccess, on
         } finally {
             setLoading(false);
         }
-    };
+    }, [publicClient, chainId, onBalanceUpdate]);
 
     // Handle minting cUSD to operator
     const handleMintToOperator = async () => {
@@ -115,7 +115,7 @@ export default function OperatorCUSDBalance({ onBalanceUpdate, onMintSuccess, on
 
     useEffect(() => {
         fetchOperatorBalance();
-    }, [publicClient, chainId]);
+    }, [publicClient, chainId, fetchOperatorBalance]);
 
     return (
         <div className="bg-black/30 backdrop-blur-sm rounded-xl p-6 border border-gray-700">

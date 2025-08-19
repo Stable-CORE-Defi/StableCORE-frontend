@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi';
 import { parseEther, formatEther } from 'viem';
@@ -144,13 +144,13 @@ const MintCusdButton: React.FC<MintCusdButtonProps> = ({ onMintComplete, showBal
     const [step2Hash, setStep2Hash] = useState<string>();
 
     // Get contract addresses for current network
-    const getCUSDAddress = () => {
+    const getCUSDAddress = useCallback(() => {
         return getContractAddress('CUSD', chainId);
-    };
+    }, [chainId]);
 
-    const getUSDCAddress = () => {
+    const getUSDCAddress = useCallback(() => {
         return getContractAddress('USDC', chainId);
-    };
+    }, [chainId]);
 
     // Read cUSD balance with manual refetch capability
     const { data: cusdBalance, refetch: refetchCusdBalance } = useReadContract({
@@ -160,18 +160,6 @@ const MintCusdButton: React.FC<MintCusdButtonProps> = ({ onMintComplete, showBal
         args: [address as `0x${string}`],
         query: {
             enabled: !!address && !!getCUSDAddress() && getCUSDAddress() !== '0x0000000000000000000000000000000000000000',
-            refetchInterval: 3000, // Refetch every 3 seconds
-        },
-    });
-
-    // Read USDC balance with manual refetch capability
-    const { data: usdcBalance, refetch: refetchUsdcBalance } = useReadContract({
-        address: getUSDCAddress() as `0x${string}`,
-        abi: USDC_ABI.abi,
-        functionName: 'balanceOf',
-        args: [address as `0x${string}`],
-        query: {
-            enabled: !!address && !!getUSDCAddress() && getUSDCAddress() !== '0x0000000000000000000000000000000000000000',
             refetchInterval: 3000, // Refetch every 3 seconds
         },
     });
@@ -193,29 +181,25 @@ const MintCusdButton: React.FC<MintCusdButtonProps> = ({ onMintComplete, showBal
         if (step1Data && !isStep1Loading) {
             setStep1Hash(step1Data);
             setStep(2);
-            // Refetch USDC balance after step 1 completes
             setTimeout(() => {
-                refetchUsdcBalance();
+                refetchCusdBalance();
             }, 1000);
         }
-    }, [step1Data, isStep1Loading, refetchUsdcBalance]);
+    }, [step1Data, isStep1Loading, refetchCusdBalance]);
 
     // Handle step 2 completion
     useEffect(() => {
         if (step2Data && !isStep2Loading) {
             setStep2Hash(step2Data);
             setStep(3);
-            // Refetch both balances after step 2 completes
             setTimeout(() => {
                 refetchCusdBalance();
-                refetchUsdcBalance();
             }, 1000);
-            // Call the callback to refresh parent component data
             if (onMintComplete) {
                 onMintComplete();
             }
         }
-    }, [step2Data, isStep2Loading, refetchCusdBalance, refetchUsdcBalance, onMintComplete]);
+    }, [step2Data, isStep2Loading, refetchCusdBalance, onMintComplete]);
 
     const handleMint = async () => {
         if (!address) return;
@@ -236,41 +220,36 @@ const MintCusdButton: React.FC<MintCusdButtonProps> = ({ onMintComplete, showBal
                 functionName: 'mint',
                 args: [parseEther('10')],
             });
-        } catch (error) {
-            console.error('Error minting USDC:', error);
+        } catch {
+            console.error('Error minting USDC');
             setStep(0);
         }
     };
 
-    const handleStep2 = async () => {
+    const handleStep2 = useCallback(async () => {
         if (!address || step !== 2) return;
-
         const cusdAddress = getCUSDAddress();
         if (!cusdAddress || cusdAddress === '0x0000000000000000000000000000000000000000') {
-            console.error('CUSD contract not available on current network');
             return;
         }
-
         try {
-            // Step 2: Mint 10 cUSD using depositAndMint
             await mintCusd({
                 address: cusdAddress as `0x${string}`,
                 abi: CUSD_ABI.abi,
                 functionName: 'depositAndMint',
                 args: [parseEther('10')],
             });
-        } catch (error) {
-            console.error('Error minting cUSD:', error);
+        } catch {
             setStep(1);
         }
-    };
+    }, [address, step, getCUSDAddress, mintCusd]);
 
     // Trigger step 2 when step 1 is complete
     useEffect(() => {
         if (step === 2 && !isStep1Loading) {
             handleStep2();
         }
-    }, [step, isStep1Loading]);
+    }, [step, isStep1Loading, handleStep2]);
 
     const formatBalance = (balance: unknown) => {
         if (!balance || typeof balance !== 'bigint') return '0';
@@ -304,7 +283,6 @@ const MintCusdButton: React.FC<MintCusdButtonProps> = ({ onMintComplete, showBal
                     // Refetch balances when modal closes
                     setTimeout(() => {
                         refetchCusdBalance();
-                        refetchUsdcBalance();
                     }, 500);
                 }}
                 onMint={handleMint}

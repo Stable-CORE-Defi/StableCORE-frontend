@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useAccount, usePublicClient, useWalletClient, useChainId } from "wagmi";
-import { parseUnits, formatUnits } from "viem";
+import { parseUnits } from "viem";
 import LoanManagerJson from "@/contracts/LoanManager.sol/LoanManager.json";
 import { getContractAddress } from "@/config";
 
@@ -32,14 +32,6 @@ export default function TakeLoanButton({
     const publicClient = usePublicClient();
     const { data: walletClient } = useWalletClient();
     const chainId = useChainId();
-
-    // Calculate required collateral (stCORE) based on loan amount (USDC)
-    function calculateCollateral(amount: string) {
-        const loanValue = parseFloat(amount) || 0;
-        return (loanValue * 1.5).toFixed(2);
-    }
-
-    // Loan amount is fixed at 10 cUSD, no need for change handler
 
     // Handle take loan action
     const handleTakeLoan = async (e: React.FormEvent) => {

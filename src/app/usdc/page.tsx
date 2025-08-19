@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAccount, usePublicClient, useWalletClient, useChainId } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 
@@ -23,7 +23,7 @@ const USDCMint = () => {
   const chainId = useChainId();
 
   // Get the correct contract address for the current network
-  const getUSDCAddress = () => {
+  const getUSDCAddress = useCallback(() => {
     const dynamicAddress = getContractAddress("USDC", chainId);
     console.log("Dynamic USDC address:", dynamicAddress);
 
@@ -34,14 +34,11 @@ const USDCMint = () => {
     }
 
     return dynamicAddress;
-  };
+  }, [chainId]);
 
   // Fetch balance
-  const fetchBalance = async () => {
-    if (!address || !publicClient) {
-      console.log("Missing address or publicClient:", { address, publicClient });
-      return;
-    }
+  const fetchBalance = useCallback(async () => {
+    if (!address || !publicClient) return;
 
     setBalanceLoading(true);
     try {
@@ -74,7 +71,7 @@ const USDCMint = () => {
     } finally {
       setBalanceLoading(false);
     }
-  };
+  }, [address, publicClient, chainId, getUSDCAddress]);
 
   // Fetch balance on mount and when address, chainId, or publicClient changes
   useEffect(() => {
@@ -92,7 +89,7 @@ const USDCMint = () => {
     } else {
       console.log("useEffect conditions not met:", { isConnected, address: !!address, publicClient: !!publicClient });
     }
-  }, [address, isConnected, publicClient, chainId]);
+  }, [address, isConnected, publicClient, fetchBalance]);
 
   // Handle input change
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAccount, usePublicClient, useWalletClient, useChainId } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 import CUSDJson from "@/contracts/CUSD.sol/CUSD.json";
 import sCUSDJson from "@/contracts/sCUSD.sol/sCUSD.json";
-import { getContractAddress, supportedChains } from "../../config";
+import { getContractAddress } from "../../config";
 import MintCusdButton from "../components/MintCusdButton";
 
 const SwapPage = () => {
@@ -28,7 +28,7 @@ const SwapPage = () => {
   const { data: walletClient } = useWalletClient();
   const chainId = useChainId();
 
-  const fetchCurrentRate = async () => {
+  const fetchCurrentRate = useCallback(async () => {
     if (!publicClient) return;
 
     try {
@@ -55,14 +55,18 @@ const SwapPage = () => {
         console.error("Invalid shares result:", sharesForOneAsset);
         setCurrentRate("1.0");
       }
-    } catch (err) {
-      console.error("Error fetching current rate:", err);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Error fetching current rate:", err);
+      } else {
+        console.error("Error fetching current rate:", err);
+      }
       setCurrentRate("1.0");
     }
-  };
+  }, [publicClient, chainId]);
 
   // Debug function to check vault state
-  const debugVaultState = async () => {
+  const debugVaultState = useCallback(async () => {
     if (!publicClient) return;
 
     try {
@@ -98,13 +102,17 @@ const SwapPage = () => {
           console.warn(`Debug: Unusual vault ratio detected: ${ratio}. This might indicate vault issues.`);
         }
       }
-    } catch (err) {
-      console.error("Error debugging vault state:", err);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Error debugging vault state:", err);
+      } else {
+        console.error("Error debugging vault state:", err);
+      }
     }
-  };
+  }, [publicClient, chainId]);
 
   // Validate exchange rate is reasonable
-  const validateExchangeRate = (rate: number, fromToken: string, toToken: string): boolean => {
+  const validateExchangeRate = useCallback((rate: number, fromToken: string, toToken: string): boolean => {
     // For a normal vault, the rate should be close to 1:1
     // Allow some deviation for fees and performance
     const minRate = 0.8; // 20% slippage tolerance
@@ -117,10 +125,10 @@ const SwapPage = () => {
     }
     setUnusualRate(false);
     return true;
-  };
+  }, []);
 
   // Format number in ETH style
-  const formatEthStyle = (value: string, decimals: number = 8): string => {
+  const formatEthStyle = useCallback((value: string, decimals: number = 8): string => {
     const num = parseFloat(value);
     if (isNaN(num)) return "0.00000000";
 
@@ -140,19 +148,19 @@ const SwapPage = () => {
     parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
     return parts.join('.');
-  };
+  }, []);
 
   // Simple balance display for debugging
-  const displayBalance = (balance: string, token: string): string => {
+  const displayBalance = useCallback((balance: string): string => {
     const num = parseFloat(balance);
     if (isNaN(num)) return "0";
 
     // Just return the balance as is, since formatUnits should have already handled the decimals
     return balance;
-  };
+  }, []);
 
   // Get token decimals
-  const getTokenDecimals = async (tokenAddress: string): Promise<number> => {
+  const getTokenDecimals = useCallback(async (tokenAddress: string) => {
     if (!publicClient) return 18;
 
     try {
@@ -171,14 +179,18 @@ const SwapPage = () => {
         args: [],
       });
       return Number(decimals);
-    } catch (err) {
-      console.error(`Error getting decimals for ${tokenAddress}:`, err);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error(`Error getting decimals for ${tokenAddress}:`, err);
+      } else {
+        console.error(`Error getting decimals for ${tokenAddress}:`, err);
+      }
       return 18; // fallback to 18
     }
-  };
+  }, [publicClient]);
 
   // Fetch balances
-  const fetchBalances = async () => {
+  const fetchBalances = useCallback(async () => {
     if (!address || !publicClient) return;
 
     try {
@@ -226,13 +238,17 @@ const SwapPage = () => {
         console.log("Debug: sCUSD contract address not found");
         setStcUSDBalance("0");
       }
-    } catch (err) {
-      console.error("Error fetching balances:", err);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Error fetching balances:", err);
+      } else {
+        console.error("Error fetching balances:", err);
+      }
     }
-  };
+  }, [address, publicClient, chainId, getTokenDecimals]);
 
   // Calculate preview
-  const calculateSwap = async () => {
+  const calculateSwap = useCallback(async () => {
     if (!fromAmount || !publicClient) {
       setToAmount("");
       return;
@@ -336,12 +352,16 @@ const SwapPage = () => {
           setToAmount(fromAmount); // Fallback to 1:1
         }
       }
-    } catch (err) {
-      console.error("Error calculating swap:", err);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Error calculating swap:", err);
+      } else {
+        console.error("Error calculating swap:", err);
+      }
       // Fallback to 1:1 rate if calculation fails
       setToAmount(fromAmount);
     }
-  };
+  }, [fromAmount, fromToken, toToken, publicClient, chainId, validateExchangeRate]);
 
   // Handle swap
   const handleSwap = async () => {
@@ -414,24 +434,29 @@ const SwapPage = () => {
         fetchBalances();
       }, 2000);
 
-    } catch (err: any) {
-      console.error("Swap error:", err);
-      setError(err.message || "Failed to execute swap");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Swap error:", err);
+        setError(err.message || "Failed to execute swap");
+      } else {
+        console.error("Swap error:", err);
+        setError("Failed to execute swap");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   // Handle token swap (switch from/to tokens)
-  const handleTokenSwap = () => {
+  const handleTokenSwap = useCallback(() => {
     setFromToken(toToken);
     setToToken(fromToken);
     setFromAmount(toAmount);
     setToAmount("");
-  };
+  }, [fromToken, toToken, toAmount]);
 
   // Handle input change
-  const handleFromAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFromAmountChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     // Allow empty string or valid decimal numbers
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
@@ -441,39 +466,30 @@ const SwapPage = () => {
         setFromAmount(value);
       }
     }
-  };
+  }, []);
 
   // Handle max button
-  const handleMaxClick = () => {
+  const handleMaxClick = useCallback(() => {
     if (fromToken === "CUSD") {
       setFromAmount(CUSDBalance);
     } else if (fromToken === "stcUSD") {
       setFromAmount(stcUSDBalance);
     }
-  };
+  }, [fromToken, CUSDBalance, stcUSDBalance]);
 
   // Fetch balances on mount and when address changes
   useEffect(() => {
     if (isConnected && address && publicClient) {
+      debugVaultState();
       fetchBalances();
       fetchCurrentRate(); // Fetch rate on mount
-      debugVaultState(); // Debug vault state
     }
-  }, [address, isConnected, publicClient, chainId]);
+  }, [address, isConnected, publicClient, chainId, debugVaultState, fetchBalances, fetchCurrentRate]);
 
   // Calculate swap when fromAmount changes
   useEffect(() => {
     calculateSwap();
-  }, [fromAmount, fromToken, toToken]);
-
-  const getCurrentNetworkName = () => {
-    if (chainId === supportedChains.coreTestnet2.id) {
-      return "Core Testnet2";
-    } else if (chainId === supportedChains.hardhat.id) {
-      return "Hardhat";
-    }
-    return "Unknown Network";
-  };
+  }, [fromAmount, fromToken, toToken, calculateSwap]);
 
   return (
     <div className="min-h-screen bg-black text-white p-8 relative">
@@ -524,7 +540,7 @@ const SwapPage = () => {
                 <span className="text-gray-400 text-sm">From</span>
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-gray-400">
-                    Balance: {fromToken === "CUSD" ? displayBalance(CUSDBalance, "CUSD") : displayBalance(stcUSDBalance, "stcUSD")}
+                    Balance: {fromToken === "CUSD" ? displayBalance(CUSDBalance) : displayBalance(stcUSDBalance)}
                   </span>
                   <button
                     onClick={handleMaxClick}
@@ -598,7 +614,7 @@ const SwapPage = () => {
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-400 text-sm">To</span>
                 <span className="text-sm text-gray-400">
-                  Balance: {toToken === "CUSD" ? displayBalance(CUSDBalance, "CUSD") : displayBalance(stcUSDBalance, "stcUSD")}
+                  Balance: {toToken === "CUSD" ? displayBalance(CUSDBalance) : displayBalance(stcUSDBalance)}
                 </span>
               </div>
               <div className="flex items-center space-x-4">
@@ -671,11 +687,11 @@ const SwapPage = () => {
             <div className="relative z-10">
               <h3 className="text-lg font-semibold text-[#FF8C00] mb-3">About cUSD</h3>
               <p className="text-gray-400 text-sm mb-4">
-                cUSD is the native stablecoin of the StableCORE ecosystem. It's used as the base asset for trading and lending.
+                cUSD is the native stablecoin of the StableCORE ecosystem. It&apos;s used as the base asset for trading and lending.
               </p>
               <h3 className="text-lg font-semibold text-[#FF6347] mb-3">About stcUSD</h3>
               <p className="text-gray-400 text-sm">
-                stcUSD represents staked cUSD shares. By swapping cUSD for stcUSD, you're depositing into the vault and earning yield.
+                stcUSD represents staked cUSD shares. By swapping cUSD for stcUSD, you&apos;re depositing into the vault and earning yield.
               </p>
             </div>
           </div>

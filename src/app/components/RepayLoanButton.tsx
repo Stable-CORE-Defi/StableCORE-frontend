@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { useAccount, usePublicClient, useWalletClient, useChainId } from "wagmi";
-import { parseUnits, formatUnits } from "viem";
 import LoanManagerJson from "@/contracts/LoanManager.sol/LoanManager.json";
 import { getContractAddress } from "@/config";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAccount, usePublicClient, useWalletClient, useChainId } from "wagmi";
 import { parseUnits, formatUnits } from "viem";
 import USDCJson from "@/contracts/USDC/USDC.json";
@@ -24,14 +24,12 @@ const MintPage = () => {
   const chainId = useChainId();
 
   // Fetch balances
-  const fetchBalances = async () => {
+  const fetchBalances = useCallback(async () => {
     if (!address || !publicClient) return;
-
     try {
       // Get contract addresses for current network
       const USDCAddress = getContractAddress("USDC", chainId);
       const cusdAddress = getContractAddress("CUSD", chainId);
-
       // Fetch USDC balance
       if (USDCAddress !== '0x0000000000000000000000000000000000000000') {
         const USDCBalanceData = await publicClient.readContract({
@@ -40,12 +38,10 @@ const MintPage = () => {
           functionName: "balanceOf",
           args: [address],
         });
-
         setUSDCBalance(formatUnits(USDCBalanceData as bigint, 18)); // USDC has 18 decimals
       } else {
         setUSDCBalance("0");
       }
-
       // Fetch CUSD balance
       if (cusdAddress !== '0x0000000000000000000000000000000000000000') {
         const CUSDBalanceData = await publicClient.readContract({
@@ -54,17 +50,15 @@ const MintPage = () => {
           functionName: "balanceOf",
           args: [address],
         });
-
         setCUSDBalance(formatUnits(CUSDBalanceData as bigint, 18)); // CUSD has 18 decimals
       } else {
         setCUSDBalance("0");
       }
-    } catch (err) {
-      console.error("Error fetching balances:", err);
+    } catch {
       setUSDCBalance("0");
       setCUSDBalance("0");
     }
-  };
+  }, [address, publicClient, chainId]);
 
   // Fetch balances on mount and when address, chainId, or publicClient changes
   useEffect(() => {
@@ -78,7 +72,7 @@ const MintPage = () => {
 
       return () => clearInterval(interval);
     }
-  }, [address, isConnected, publicClient, chainId]);
+  }, [address, isConnected, publicClient, chainId, fetchBalances]);
 
   // Handle input change for CUSD
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
